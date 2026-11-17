@@ -1,0 +1,3202 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta de rescate</title>
+    <script src="assets/phaser.min.js"></script>
+    <script>if (typeof Phaser === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"><\/script>'); }</script>
+    <script src="assets/art.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0;
+            background-color: #0d0d15; color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; overflow: hidden;
+        }
+        h1 { margin: 5px 0 2px 0; font-size: 22px; text-align: center; color: #f39c12; }
+        p { margin: 0 0 10px 0; color: #bbb; font-size: 13px; text-align: center; }
+        
+        #game-wrapper {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            border: 3px solid #222;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #start-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #151922 0%, #0a0c10 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            text-align: center;
+            color: #ecf0f1;
+            box-sizing: border-box;
+        }
+
+        .credencial-card {
+            background: linear-gradient(145deg, #18202c, #0d121a);
+            border: 2px solid #2a3b53;
+            border-top: 4px solid #e74c3c;
+            border-radius: 12px;
+            width: min(460px, 94%);
+            padding: 24px 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(231, 76, 60, 0.2);
+            text-align: left;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .credencial-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .credencial-badge {
+            background: #e74c3c;
+            color: white;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .credencial-serial {
+            font-family: monospace;
+            color: #3498db;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .credencial-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+            font-size: 13px;
+        }
+
+        .credencial-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .credencial-label {
+            color: #7f8c8d;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .credencial-val {
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .credencial-input-box {
+            margin-top: 10px;
+            margin-bottom: 18px;
+        }
+
+        .credencial-input-box label {
+            display: block;
+            color: #bdc3c7;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #34495e;
+            border-radius: 6px;
+            background: #080b10;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-align: center;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .name-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+        }
+
+        .name-hint {
+            min-height: 18px;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        .confirm-btn-html {
+            width: 100%;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .confirm-btn-html:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff5252, #e74c3c);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn-html:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .confirm-btn-html:disabled {
+            background: #2c3e50;
+            color: #7f8c8d;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .game-title-group {
+            margin-bottom: 22px;
+        }
+
+        .game-title-group h2 {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #ffffff;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+        }
+
+        .game-title-group h3 {
+            font-size: 14px;
+            color: #3498db;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 6px 0 4px 0;
+            font-weight: 700;
+        }
+
+        .game-title-group p {
+            font-size: 13px;
+            color: #95a5a6;
+            margin: 0;
+            font-style: italic;
+        }
+
+        .mobile-controls {
+            display: none;
+            width: 800px; max-width: 100%;
+            justify-content: space-between; align-items: center;
+            padding: 10px 20px; margin-top: 5px;
+            touch-action: none;
+        }
+        .dpad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 5px; }
+        .touch-btn {
+            background: #2c3e50; border: 2px solid #555; color: white; font-weight: bold;
+            font-size: 18px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            user-select: none; -webkit-user-select: none;
+        }
+        .touch-btn:active { background: #e74c3c; }
+        .action-btn { width: 110px; height: 100px; background: #27ae60; border-radius: 12px; font-size: 16px; text-align: center; }
+        @media (max-width: 850px) { .mobile-controls { display: flex; } }
+    </style>
+</head>
+<body>
+
+    <h1>Ruta de rescate</h1>
+    <p>PC: [WASD/Flechas] Moverse | [E/Espacio] Recoger/Transferir | [ESC] Pausa | Móvil: Botones en pantalla</p>
+
+    <div id="game-wrapper">
+        <div id="start-overlay">
+            <div class="game-title-group">
+                <h2>RUTA DE ESCAPE</h2>
+                <h3>SIMULACIÓN DE EMERGENCIA Y SUPERVIVENCIA</h3>
+                <p>"Lleva a los sobrevivientes al puesto de rescate"</p>
+            </div>
+
+            <div class="credencial-card">
+                <div class="credencial-header">
+                    <span class="credencial-badge">BRIGADA DE RESCATE</span>
+                    <span class="credencial-serial">N° R-700</span>
+                </div>
+                <div class="credencial-grid">
+                    <div class="credencial-field">
+                        <div class="credencial-label">BRIGADA</div>
+                        <div class="credencial-val">ALFA</div>
+                    </div>
+                    <div class="credencial-field">
+                        <div class="credencial-label">SECTOR</div>
+                        <div class="credencial-val">A</div>
+                    </div>
+                    <div class="credencial-field" style="grid-column: span 2;">
+                        <div class="credencial-label">CATEGORÍA</div>
+                        <div class="credencial-val" style="color:#e74c3c;">RESCATISTA</div>
+                    </div>
+                </div>
+
+                <div class="credencial-input-box">
+                    <label for="player-name">NOMBRE DEL RESCATISTA</label>
+                    <input class="name-input" id="player-name" type="text" maxlength="10" autocomplete="off" placeholder="Ingresá tu nombre" />
+                    <div class="name-hint" id="name-hint">Solo letras y números (3 a 10 caracteres).</div>
+                </div>
+
+                <button class="confirm-btn-html" id="btn-start-game" disabled>CONFIRMAR IDENTIDAD</button>
+            </div>
+        </div>
+        <div id="game-container"></div>
+    </div>
+
+    <div class="mobile-controls">
+        <div class="dpad">
+            <div></div><div class="touch-btn" id="btn-up">▲</div><div></div>
+            <div class="touch-btn" id="btn-left">◄</div><div></div><div class="touch-btn" id="btn-right">►</div>
+            <div></div><div class="touch-btn" id="btn-down">▼</div><div></div>
+        </div>
+        <div class="touch-btn action-btn" id="btn-action">ACCION<br>[ E ]</div>
+    </div>
+
+    <script>
+        class MusicManager {
+            constructor() {
+                this.tracks = {};
+                this.currentTrackKey = null;
+                this.currentBgm = null;
+                this.isMuted = false;
+                this.bgmVolume = 0.5;
+                this.jingleVolume = 0.65;
+                this.isPaused = false;
+                this.initialized = false;
+                this.activeJingle = null;
+
+                this.fileDefinitions = {
+                    inicio: ['assets/musica_de_inicio.mp3', 'musica/musica_de_inicio.mp3', 'musica_de_inicio.mp3'],
+                    niveles: ['assets/musica_niveles_1-7.wav', 'musica/musica_niveles_1-7.wav', 'musica_niveles_1-7.wav'],
+                    nivel8: ['assets/musica_nivel_8.wav', 'musica/musica_nivel_8.wav', 'musica_nivel_8.wav'],
+                    gano: ['assets/musica_gano_nivel.wav', 'musica/musica_gano_nivel.wav', 'musica_gano_nivel.wav'],
+                    perdido: ['assets/musica_nivel_perdido.mp3', 'musica/musica_nivel_perdido.mp3', 'musica_nivel_perdido.mp3']
+                };
+            }
+
+            createAudio(key, loop = false) {
+                if (this.tracks[key]) return this.tracks[key];
+                const paths = this.fileDefinitions[key];
+                if (!paths) return null;
+
+                const audio = new Audio();
+                audio.preload = 'auto';
+                audio.loop = loop;
+                audio.volume = this.bgmVolume;
+
+                let pathIdx = 0;
+                audio.src = paths[pathIdx];
+
+                audio.addEventListener('error', () => {
+                    pathIdx++;
+                    if (pathIdx < paths.length) {
+                        try {
+                            audio.src = paths[pathIdx];
+                            audio.load();
+                        } catch(e) {}
+                    }
+                });
+
+                this.tracks[key] = audio;
+                return audio;
+            }
+
+            init() {
+                if (this.initialized) return;
+                this.initialized = true;
+                this.createAudio('inicio', true);
+                this.createAudio('niveles', true);
+                this.createAudio('nivel8', true);
+                this.createAudio('gano', false);
+                this.createAudio('perdido', false);
+            }
+
+            stopJingles() {
+                if (this.activeJingle) {
+                    try {
+                        this.activeJingle.pause();
+                        this.activeJingle.currentTime = 0;
+                    } catch(e) {}
+                    this.activeJingle = null;
+                }
+            }
+
+            stopAll() {
+                this.stopBGM();
+                this.stopJingles();
+            }
+
+            playBGM(key) {
+                if (!this.initialized) this.init();
+                // Detener cualquier jingle activo para que no se superponga
+                this.stopJingles();
+
+                if (this.isMuted) {
+                    this.currentTrackKey = key;
+                    return;
+                }
+
+                // Si ya está sonando esta pista, no reiniciar, solo restablecer velocidad normal
+                if (this.currentTrackKey === key && this.currentBgm && !this.currentBgm.paused) {
+                    try { this.currentBgm.playbackRate = 1.0; } catch(e) {}
+                    return;
+                }
+
+                // Si cambia de pista, frenar la anterior
+                if (this.currentBgm && this.currentTrackKey !== key) {
+                    try {
+                        this.currentBgm.pause();
+                        this.currentBgm.currentTime = 0;
+                    } catch(e) {}
+                }
+
+                const audio = this.createAudio(key, true);
+                if (!audio) return;
+
+                this.currentTrackKey = key;
+                this.currentBgm = audio;
+                this.isPaused = false;
+                audio.loop = true;
+                audio.volume = this.bgmVolume;
+                audio.playbackRate = 1.0;
+
+                try {
+                    const p = audio.play();
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(() => {});
+                    }
+                } catch(e) {}
+            }
+
+            stopBGM() {
+                if (this.currentBgm) {
+                    try {
+                        this.currentBgm.pause();
+                        this.currentBgm.currentTime = 0;
+                    } catch(e) {}
+                }
+                this.currentTrackKey = null;
+                this.currentBgm = null;
+                this.isPaused = false;
+            }
+
+            pauseBGM() {
+                if (this.currentBgm && !this.currentBgm.paused) {
+                    this.isPaused = true;
+                    try { this.currentBgm.pause(); } catch(e) {}
+                }
+                if (this.activeJingle && !this.activeJingle.paused) {
+                    try { this.activeJingle.pause(); } catch(e) {}
+                }
+            }
+
+            resumeBGM() {
+                if (this.isMuted) return;
+                if (this.currentBgm && this.isPaused) {
+                    this.isPaused = false;
+                    try {
+                        const p = this.currentBgm.play();
+                        if (p && typeof p.catch === 'function') p.catch(() => {});
+                    } catch(e) {}
+                }
+                if (this.activeJingle && this.activeJingle.paused) {
+                    try {
+                        const p = this.activeJingle.play();
+                        if (p && typeof p.catch === 'function') p.catch(() => {});
+                    } catch(e) {}
+                }
+            }
+
+            setPlaybackRate(rate) {
+                if (this.currentBgm) {
+                    try { this.currentBgm.playbackRate = rate; } catch(e) {}
+                }
+            }
+
+            playJingle(key) {
+                if (this.isMuted) return;
+                if (!this.initialized) this.init();
+
+                // Detener cualquier música de fondo por completo para que NUNCA se superpongan
+                this.stopBGM();
+                // Detener cualquier jingle previo
+                this.stopJingles();
+
+                const audio = this.createAudio(key, false);
+                if (!audio) return;
+
+                this.activeJingle = audio;
+                audio.loop = false;
+                audio.volume = this.jingleVolume;
+                try { audio.currentTime = 0; } catch(e) {}
+
+                const onEnded = () => {
+                    audio.removeEventListener('ended', onEnded);
+                    if (this.activeJingle === audio) this.activeJingle = null;
+                };
+                audio.addEventListener('ended', onEnded);
+
+                try {
+                    const p = audio.play();
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(() => { onEnded(); });
+                    }
+                } catch(e) {
+                    onEnded();
+                }
+            }
+
+            setAudioEnabled(enabled) {
+                this.isMuted = !enabled;
+                if (this.isMuted) {
+                    if (this.currentBgm) {
+                        try { this.currentBgm.pause(); } catch(e) {}
+                    }
+                    if (this.activeJingle) {
+                        try { this.activeJingle.pause(); } catch(e) {}
+                    }
+                } else {
+                    if (this.currentBgm && !this.isPaused) {
+                        try {
+                            const p = this.currentBgm.play();
+                            if (p && typeof p.catch === 'function') p.catch(() => {});
+                        } catch(e) {}
+                    }
+                }
+            }
+        }
+
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.audioEnabled = true;
+                this.music = new MusicManager();
+            }
+
+            init() {
+                try {
+                    if (!this.ctx) {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        this.ctx = new AudioCtx();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
+                } catch(e) {}
+                try { this.music.init(); } catch(e) {}
+            }
+
+            playPickup() {
+                if (!this.audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.15);
+            }
+
+            playHit() {
+                if (!this.audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+
+            playDrop() {
+                if (!this.audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+
+            playDeliver() {
+                if (!this.audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            // Métodos de control musical
+            playMenuMusic() {
+                this.music.playBGM('inicio');
+            }
+
+            playLevelsMusic() {
+                this.music.playBGM('niveles');
+            }
+
+            playLevel8Music() {
+                this.music.playBGM('nivel8');
+            }
+
+            startBGM() {
+                if (window.GameState && window.GameState.currentLevel === 8) {
+                    this.playLevel8Music();
+                } else {
+                    this.playLevelsMusic();
+                }
+            }
+
+            stopBGM() {
+                this.music.stopBGM();
+            }
+
+            pauseBGM() {
+                this.music.pauseBGM();
+            }
+
+            resumeBGM() {
+                this.music.resumeBGM();
+            }
+
+            setSpeed(rate) {
+                this.music.setPlaybackRate(rate);
+            }
+
+            stopJingles() {
+                this.music.stopJingles();
+            }
+
+            stopAll() {
+                this.music.stopAll();
+            }
+
+            playVictory() {
+                this.music.playJingle('gano');
+            }
+
+            playDefeat() {
+                this.music.playJingle('perdido');
+            }
+
+            setAudioEnabled(enabled) {
+                this.audioEnabled = enabled;
+                this.music.setAudioEnabled(enabled);
+            }
+        }
+
+        const SFX = new SoundFX();
+        window.SFX = SFX;
+
+        const config = {
+            type: Phaser.AUTO,
+            width: 800, height: 600,
+            parent: 'game-container',
+            backgroundColor: '#1a1a2e',
+            physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+            scene: [BootScene, IntroMissionScene, CatastropheSelectScene, LevelSelectScene, GameScene, GameOverScene]
+        };
+
+        const game = new Phaser.Game(config);
+        window.game = game;
+
+        const GameState = {
+            catastrophe: null,
+            currentLevel: 1,
+            maxLevels: 8,
+            totalRescued: 0,
+            playerName: '',
+            totalRunSeconds: 0,
+            modeRunRescued: 0,
+            lostThisMode: 0,
+            mobileInput: { up: false, down: false, left: false, right: false, action: false },
+            progress: JSON.parse(localStorage.getItem('ruta_rescate_progress')) || {
+                Terremoto: 1, Inundacion: 1, Erupcion: 1,
+                stars: {}
+            },
+            saveProgress(cat, lvl, starsObtained) {
+                if (lvl >= this.progress[cat] && lvl < 8) {
+                    this.progress[cat] = lvl + 1;
+                }
+                const key = `${cat}_${lvl}`;
+                if (!this.progress.stars[key] || starsObtained > this.progress.stars[key]) {
+                    this.progress.stars[key] = starsObtained;
+                }
+                localStorage.setItem('ruta_rescate_progress', JSON.stringify(this.progress));
+            }
+        };
+        window.GameState = GameState;
+
+        const RECORDS_KEY = 'ruta_rescate_records_v2';
+        function getRecords() {
+            try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; }
+            catch (e) { return {}; }
+        }
+        function formatTime(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${mins} min ${String(secs).padStart(2, '0')} s`;
+        }
+        function saveAndCompareRecord() {
+            const records = getRecords();
+            const nameKey = GameState.playerName.trim().toLocaleLowerCase('es');
+            const modeKey = `${nameKey}_${GameState.catastrophe}`;
+            const previous = records[modeKey];
+            const current = { name: GameState.playerName, rescued: GameState.totalRescued, seconds: GameState.totalRunSeconds };
+            const isBetter = !previous || current.rescued > previous.rescued ||
+                (current.rescued === previous.rescued && current.seconds < previous.seconds);
+            if (isBetter) records[modeKey] = current;
+            localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+            return { previous, current: records[modeKey], isBetter };
+        }
+
+        const HERO_RECORD_KEY = 'ruta_rescate_hero_record_v1';
+        function getHeroRecord() {
+            try { return JSON.parse(localStorage.getItem(HERO_RECORD_KEY)) || null; }
+            catch (e) { return null; }
+        }
+        function saveHeroRecord(name, seconds) {
+            if (!name) return null;
+            const prev = getHeroRecord();
+            if (!prev || seconds < prev.seconds) {
+                const newRecord = { name, seconds };
+                localStorage.setItem(HERO_RECORD_KEY, JSON.stringify(newRecord));
+                return { record: newRecord, isNew: true };
+            }
+            return { record: prev, isNew: false };
+        }
+
+        const LEVEL_TIMELIMITS = [30, 32, 34, 36, 38, 40, 42, 44];
+
+        const CATASTROPHE_DATA = {
+            Terremoto: {
+                color: 0x3e2723,
+                levels: Array.from({ length: 8 }, (_, i) => ({
+                    spawnInterval: Math.max(600, 2200 - i * 180),
+                    survivorCount: 3 + Math.floor(i * 0.7),
+                    timeLimit: LEVEL_TIMELIMITS[i],
+                    wallCount: 3 + i * 2, crackCount: 3 + i * 2,
+                    hazardSpeed: (i < 2 ? 8 + i * 2.5 : 4 + i * 2.5),
+                    hasAmbulance: i >= 3
+                }))
+            },
+            Inundacion: {
+                color: 0x0d47a1,
+                levels: Array.from({ length: 8 }, (_, i) => ({
+                    spawnInterval: Math.max(650, 2400 - i * 180),
+                    survivorCount: 3 + Math.floor(i * 0.7),
+                    timeLimit: LEVEL_TIMELIMITS[i],
+                    wallCount: 2 + i * 2, crackCount: 2 + i, hazardSpeed: (i < 2 ? 9 + i * 2.8 : 5 + i * 2.8),
+                    hasAmbulance: i >= 3
+                }))
+            },
+            Erupcion: {
+                color: 0xbf360c,
+                levels: Array.from({ length: 8 }, (_, i) => ({
+                    spawnInterval: Math.max(500, 2000 - i * 160),
+                    survivorCount: 4 + Math.floor(i * 0.6),
+                    timeLimit: LEVEL_TIMELIMITS[i],
+                    wallCount: 4 + i * 2, crackCount: 3 + i * 2, hazardSpeed: (i < 2 ? 10 + i * 3 : 6 + i * 3),
+                    hasAmbulance: i >= 3
+                }))
+            }
+        };
+
+        // =====================================================================
+        //  MAPAS DE NIVELES
+        //  Leyenda:  . libre   G sólido   C bache   P herido   J jugador   S salida
+        //  El tamaño se adapta solo (filas x columnas). Nivel en null = mapa al azar como antes.
+        // =====================================================================
+        const SCREEN_W = 800, SCREEN_H = 600;
+
+        const LEVEL_MAPS = {
+            Terremoto: [
+                // Nivel 1
+                `
+                CCCCCCCCGGGG.........CCCC
+                ..........CG.............
+                ...........GC...CGGGGG...
+                ..GGGG..P...........CG...
+                ..GC.................G...
+                ..G........G...GGGC..G...
+                ..G..C....CGC........GG..
+                ......................C..
+                .............CG..........
+                ......CGG.....GGG....SS..
+                ...J..CGG.....GGG....SS..
+                .............PGC.........
+                C.....................C..
+                ..G..C....CGC........GG..
+                ..G........G...GGGC..G...
+                ..GC.................G...
+                ..GGGG..............CG...
+                ..........PGC...CGGGGG...
+                ..........CG.............
+                CCCCCCCCGGGG.........CCCC
+                `,
+                // Nivel 2
+                `
+                .......CGGGGGC........GGG
+                ...........CG............
+                ...G.......CG...GGGG.....
+                ...G....G...G...GC....G..
+                ...G....G.P.G...C.....G..
+                ...G....G...G.P.......G..
+                ...G....G...G........GG..
+                ...G....G.......GG.....C.
+                ...G..CGG.......G........
+                ............C..CG....SS..
+                ...J........C..CG....SS..
+                ...G..CGG.......G........
+                ...G....G.......GG.....C.
+                ...G....G...G........GG..
+                ...G....G...G.........G..
+                ...G....G...G.P.C.....G..
+                ...G....G...G...GC....G..
+                ...G.......G...GGGG......
+                ...........CG............
+                .......CGGGGGC........GGG
+                `,
+                // Nivel 3
+                `
+                ...CCCCCGGGGGC.....GGGG..
+                ........GC.........G.....
+                ...GGG..G......CGGGG.....
+                ....CG......G........GG..
+                ....CG......GC.......GG..
+                ....CG..G...PG....G..CG..
+                ....CG..GC...G....G..GG..
+                ...GGG..GGG....PGGG....C.
+                ...G....CGG.....GC.....C.
+                .........CG....CGC...SSC.
+                ...J.....CG....CGC...SSC.
+                ...G....CGG.....GC.....C.
+                ...GGG..GGG.....GGG....C.
+                ....CG..GC...G....G..GG..
+                ....CG..G....G...PG..CG..
+                ....CG......G........GG..
+                ....CG......G........GG..
+                ...GGG..G......CGGGG.....
+                ........GC.........G.....
+                ...CCCCCGGGGGC.....GGGG..
+                `,
+                // Nivel 4
+                `
+                ...CCCCCGG...........GG..
+                .........C...............
+                ...GGG......GGGCGG.......
+                ....CG......GP.......GG..
+                ....CG..GG...C.......GG..
+                ....CG..GG.......GG..CG..
+                ....CG..GGP......GG..GG..
+                ...GGG..GGG....PGGG....C.
+                ...GC...CGG...GGGC.....C.
+                ...........SS..CGC...SSC.
+                ...J.......SS..CGC...SSC.
+                ...GC...CGG.....GC.....C.
+                ...GGG..GGG...GGGGG....C.
+                ....CG..GGC......GG..GG..
+                ....CG.PGG.......GG..CG..
+                ....CG..G............GG..
+                ....CG......GP......PGG..
+                ...GGG......GGGCGG.......
+                .........C...............
+                ...CCCCCGG...........GG..
+                `,
+                // Nivel 5
+                `
+                GGGGGGCCCCCGGGGGGGGG.....
+                ..........GC..GGCCCC..C..
+                ......................C..
+                GG.....G..............G..
+                GG..CGGGGGG........GP.G..
+                GG..CG...CG...GGG..GGGG..
+                CG..CG....G.....G......C.
+                ..........G...C.G......C.
+                C.........G...GGG......C.
+                CG...CGGGGGSS...G....SSC.
+                CG.J.CGGGGGSS...G....SSC.
+                C.........G...GGG......C.
+                C.........G.....G......C.
+                GG..CG....G...CCG......C.
+                GG..CG.P.CG...GGG..GGGG..
+                GG..CGGGGGG........GP.G..
+                GG.....G..............G..
+                ......................C..
+                ..........GCPPGGCCCC..C..
+                GGGGGGCCCCCGGGGGGGGG.....
+                `,
+                // Nivel 6
+                `
+                GGGGGGCCCCCGGGGGGGGG.....
+                ..........GCC...CCCC..C..
+                ......................C..
+                GG.....GG............GG..
+                GG..C...G....CG.....P.G..
+                GG..C...GC...CGGGGG..GG..
+                CG..G...G........PG....C.
+                ....GGGGG.........G....C.
+                C.........G...G..CG....C.
+                CG...C....GSS.GGGGG..SSC.
+                CG.J.C....GSS.GGGGG..SSC.
+                C.........G...G..CG....C.
+                C...GGGGG.........G....C.
+                GG..G...G........PG....C.
+                GG..C..PGC...CGGGGG..GG..
+                GG..C...G....CG.......G..
+                GG.....GG............GG..
+                ......................C..
+                ..........GCC..PCCCC..C..
+                GGGGGGCCCCCGGGGGGGGG....G
+                `,
+                // Nivel 7
+                `
+                GGGGGGCCCCCGGGGGGGGG.....
+                .....G.....GCCCCCCCC..C..
+                .....G..............PPC..
+                GG......CC...........GG..
+                GG..C...GGG..CCCCCC...G..
+                GG..C...GC...CGGGGG..GG..
+                CG...G..GC...CG..P....GC.
+                .....GGGGC....G.......GC.
+                C.......GC....G........C.
+                CG...C..GC.SSGGGGGG..SSC.
+                CG.J.C..GC.SSGGGGGG..SSC.
+                C.......GC....G........C.
+                C....GGGG.....G.......GC.
+                GG...G..GC...CG...P...GC.
+                GG..C..PGC...CGGGGG..GG..
+                GG..C...GGG..CCCCCC...G..
+                GG......CC...........GG..
+                .....G................C..
+                .....G.....GCCCCCCCC..C..
+                GGGGGGCCCCCGGGGGGGGG.....
+                `,
+                // Nivel 8
+                `
+                GGGGGGCCCCCGGGGGGGGG.....
+                .....G.....GCCCCCCCC..C..
+                .....G...............PC..
+                GG......CC...........GG..
+                GG..C...GGG..C.......G...
+                GG..C...G....CG...P......
+                CG...G..GC...CG..G.P...C.
+                .....G..GGGGGG....GGGG.C.
+                C...GG..GG........G....C.
+                CG......GG.SS...GGG..SSC.
+                CG.J.P..GG.SS...GGG..SSC.
+                C...GG..GG........G....C.
+                C....G..GGGGGG....GGGG.C.
+                GG...G..GC...CG..G.....C.
+                GG..C...G....CG..........
+                GG..C...GGG..C......PG...
+                GG......CC...........GG..
+                .....G...............PC..
+                .....G.....GCCCCCCCC..C..
+                GGGGGGCCCCCGGGGGGGGG.....
+                `
+            ],
+            Inundacion: [
+                // Nivel 1
+                `
+                ....GGGGGGG...........G.C
+                ....CCCC..............G..
+                ..G........P...GGC.......
+                ..G......GC....CGC...CC..
+                ..G......GGGG..CGGG..GGCC
+                ..GCCCC...........G......
+                ..GGGGG...........G......
+                .....CG..CGG...G..G..G...
+                ......G..G.....G..G..GP..
+                ............SS...........
+                ...J........SS...........
+                ......G..G.....G..G..GC..
+                .....CG..CGG...G..G..GC..
+                ..GGGGG...........G......
+                ..GCCCC...........G......
+                ..G.C....GGGG..CGGG..GGCC
+                ..G......GP....CGC...CCC.
+                ..G............GGC.......
+                ....CCCC..............G..
+                ....GGGGGGG.......CCCCG.C
+                `,
+                // Nivel 2
+                `
+                ....GGGGGGG...........G..
+                ....CCCC..............G..
+                ..G........P...GGC.......
+                ..G......GC....CGC...CCC.
+                ..G......GGGG..CGGG..GGCC
+                ..GCCCCC.................
+                ..GGG.....CCC............
+                .........CGGG..G..G..G...
+                .......GGG.....G..GGGGP..
+                ............SS...........
+                ...J........SS...........
+                .......GGG.....G..GGGGC..
+                .........CGGG..G..G..GC..
+                ..GGG.....CCC............
+                ..GCCCCC.................
+                ..G.C....GGGG..CGGG..GGCC
+                ..G......G.....CGP...CCC.
+                ..G............GG........
+                ....CCCC..............G..
+                ....GGGGGGGP......CCCCG..
+                `,
+                // Nivel 3
+                `
+                ....GGGGGGGG..........G..
+                ....CCC...............G..
+                ..G............GGPP......
+                ..G......GC....CG....CC..
+                ..G......GGGG..CGGG..GGGG
+                ..GCCCC..............G...
+                ..GGG................G...
+                ..........GGGGGG..GP.G...
+                ......GG.......G..G..G...
+                ............SS....G..G...
+                ...J........SS....G..G...
+                ......GG.......G..G..G...
+                ..........GGGGGG..G..G...
+                ..GGG................G...
+                ..GCCCC..............G...
+                ..G.C....GGGG..CGGG..GGGG
+                ..G......G.....CG....CC..
+                ..G............GG........
+                ....CCC.P.......G.....G..
+                ....GGGGGGGG....G.CCCCG..
+                `,
+                // Nivel 4
+                `
+                ....GG...G........CCCCG..
+                ....CCCC..............G..
+                ..G.........G..GG........
+                ..G......G.PG..CGP...CC..
+                ..G......GGGG..CGGG..GG..
+                ..GCCCC..............G...
+                ..GGG................G...
+                ..........GG...G..G..G...
+                ......GG..GC...G..G..G...
+                ......CC..GGSS.G.....SS..
+                ...J..CC..GGSS.G.....SS..
+                ......GG..GC...G..G..G...
+                ..........GG...G..G..G...
+                ..GGG................G...
+                ..GCCCCC.............G...
+                ..G......GGGG..CGGG..GG..
+                ..G......GP.G..CGP...CC..
+                ..G.........G..GG........
+                ....CCCC.......P......G..
+                ....GG...G........CCCCG..
+                `,
+                // Nivel 5
+                `
+                GGGGGGGGGGGGG...G.C...G..
+                ....CCCC....G...G....PG..
+                ..G.........G..GGP...GG..
+                ..G.........G..CG.....G..
+                ..G......GGGG............
+                ..GC.....................
+                ..GG..............GGG..CC
+                G.....CG..GGGGGG..G......
+                G.....GG..GC...G..G......
+                G.....CC....SS....G..SS..
+                G..J..CC....SS....G..SS..
+                G.....GG..GC...G..G......
+                G.....CG..GGGGGG..G......
+                ..GG..............GGG..CC
+                ..GC.....................
+                ..G......GGGG............
+                ..G......PCCG..CG....PG..
+                ..G.........G..GG....GG..
+                ....CCCC....G..PG....GG..
+                GGGGGGGGGGGGG...G.CCCCG..
+                `,
+                // Nivel 6
+                `
+                GGGGGGGGGGGGGGGGGGGGGGG..
+                G.................C......
+                G........................
+                GCCCCC.........CG.....G..
+                GGGGGGC..CGGGGGGG..P..G..
+                C..................CGGG..
+                C.....................G..
+                C......C..CGGGGCC.....C..
+                C.....PG..G....GC..G.....
+                C...CGGG....SS.....G.SS..
+                C..JCGGG....SS.....G.SS..
+                C......G..G....GC..G.....
+                C......C..CGGGGCC.....C..
+                C.....................G..
+                C...............P..CGGG..
+                GGGGGGC..CGGGGGGG..C..G..
+                GCCCCC.....P...CG.....G..
+                G....................P...
+                G.................C......
+                GGGGGGGGGGGGGGGGGGGGGGG..
+                `,
+                // Nivel 7
+                `
+                GGGGGGGGGGGGGGGGGGGGGGG..
+                G.........CCCCC...C......
+                G........................
+                GCC...GG.......PG.....G..
+                GGG...CG..GGG..GG..P..G..
+                C.....CG...........CGGG..
+                C....GGG..............G..
+                C......G..CGGGGCC........
+                C.....PG..G....GC..G.....
+                C...CGGG....SS.....G.SS..
+                C..JCGGG....SS.....G.SS..
+                C......G..G....GC..G.....
+                C......G..CGGGGCC........
+                C....GGG..............G..
+                C.....CG...........CGGG..
+                GGG...CG..GGG..GG..C..G..
+                GCC...GG...P...CG.....G..
+                G....................P...
+                G.........CCCCC...C......
+                GGGGGGGGGGGGGGGGGGGGGGG..
+                `,
+                // Nivel 8
+                `
+                GGGGGGGGGGGGGGGGGGGGGGGGG
+                G.........CCCC.....C.....
+                G........................
+                GCC...GG.......PG...PPG..
+                GGG...CG....CGGGC..C..G..
+                C.....CG....G......CGGG..
+                C....GGG....G.........G..
+                C......G..CGGGGCC........
+                C......G..G....GC..C.....
+                C...CGGG....SS.....G.SS..
+                C..JCGGG....SS.....G.SS..
+                C......G..G....GC..C.....
+                C......G..CGGGGCC........
+                C....GGG....G.........G..
+                C......G....G......CGGG..
+                GGG...CG....CGGGC..C..G..
+                GCC...GG...P....G...PPG..
+                G........................
+                G.........CCCC.....C.....
+                GGGGGGGGGGGGGGGGGGGGGGGGG
+                `
+            ],
+            Erupcion: [
+                // Nivel 1
+                `
+                GGGGCCCGGG....GGGGGGGGG..
+                G.........CCCCC..........
+                G........................
+                GCC...GGP.........C...GG.
+                GGG....G....G.....CG..G..
+                C......G....G.....CGGGG..
+                C......G....GCC.......G..
+                C......G...GGGG..........
+                C......G......C..GGG.....
+                C..................G.SS..
+                C..J..............PG.SS..
+                C......G......C..GGG.....
+                C......G...GGGG..........
+                C......G....G.........G..
+                C......G....G.....CGGGG..
+                GGG....G....GP....CG..G..
+                GCC...GG..........C...GG.
+                G........................
+                G.........CCCCC..........
+                GGGGCCCGGG....GGGGGGGGG..
+                `,
+                // Nivel 2
+                `
+                GGGGCCCGGG....GGGGGGGGGGG
+                G.........CCCCC..........
+                G........................
+                GCC...GGP.........CG..G..
+                GGG....G...GGG....CG.PG..
+                C......G...G......CGGGG..
+                C......G...G.CC.......G..
+                C...G..G...GGGG..........
+                C...GGGG......C..GGG.....
+                C..................G.SS..
+                C..J..............PG.SS..
+                C...GGGG......C..GGG.....
+                C...G..G...GGGG..........
+                C......G...G..........G..
+                C......G...G.P....CGGGG..
+                GGG....G...GGG....CG..G..
+                GCC...GG..........CG..G..
+                G........................
+                G.........CCCCC..........
+                GGGGCCCGGG....GGGGGGGGGGG
+                `,
+                // Nivel 3
+                `
+                GGGGCCCGGG...GGGGGGGGGGGG
+                G.........CCCGC..........
+                G........................
+                GC..G..GC.........CG..GG.
+                GG..G..G...GGGG...CG..G..
+                C...G..G...G......CGGGG..
+                C...G..G...G..P.......G..
+                C...G..G...GGGG..........
+                C...GGGGC.....C..GGG.....
+                C..................G.SS..
+                C..J..............PG.SS..
+                C...GGGGC.....C..GGG.....
+                C...G..G...GGGG..........
+                C...G..G...G..........G..
+                C...G..G...G......CGGGG..
+                GG..G..G...GGGG...CGP.G..
+                GC..G.PGC.........CG..GG.
+                G........................
+                G.........CCCGC..........
+                GGGGCCCGGG...GGGGGGGGGGGG
+                `,
+                // Nivel 4
+                `
+                GGGGGGGGGGCCCGGGGGGGGGG..
+                GC........CCCGC..........
+                GC.......................
+                GC..GGGGC.........CGCCG..
+                GG..G..GC..GGGG...CGCCG..
+                C...G..GC..GC.....CGGGG..
+                C...G......GC.P.......G..
+                C...GP.....GGGG.......C..
+                C...GGGGC..G.....CGG.....
+                C...G.......SS.....G.SS..
+                C.J.G.......SS....PG.SS..
+                C...GGGGC..GC....CGG.....
+                C...G......GGGG..........
+                C...G......GC.........G..
+                C...G..GC..GC.....CGGGG..
+                GG..G..GC..GGGG...CGP.G..
+                GC..GGGGC.........CG..G..
+                GC....................C..
+                GC........CCCGC..........
+                GGGGGGGGGGCCCGGGGGGGGGG..
+                `,
+                // Nivel 5
+                `
+                GGGGGGGGGGCCCGGGGGGGGGG..
+                GC........CCCCC..........
+                GC.......................
+                GC..GGGGC...........PCG..
+                GG..G..GGGGGGGG..G...CG..
+                C...G.PGC........G...GG..
+                C................G....G..
+                C..........GGGGGGG.C..C..
+                C...GGGGC.....G..CGG.....
+                C...G..GC...SSG......SS..
+                C.J.G..GC...SSGP.....SS..
+                C...GGGGC.....G..CGG.....
+                C..........GGGGGGG.C..C..
+                C................G....G..
+                C...G..GC........G...GG..
+                GG..G..GGGGGGGG..GC..PG..
+                GC..GGGGC........P....G..
+                GC....................C..
+                GC........CCCCC..........
+                GGGGGGGGGGCCCGGGGGGGGGG..
+                `,
+                // Nivel 6
+                `
+                GG...........GGGGGGGGGG..
+                GC.......................
+                GC..GGGGGGC..............
+                GC..GC..........GGGGGGG..
+                GG..GC.......CP.G........
+                C...GC..GGG..G..C........
+                C.......G....G.....GC....
+                C.......GP...G.....G.....
+                C...C...G..GGG..G..G.....
+                C...G...G...SS..G..G.SS..
+                C.J.G...G...SS..G..G.SS..
+                C...C...G..GGG..G..G.....
+                C.......G....G.....G.....
+                C.......G....G.....GC....
+                C...GC..GGG..G..C........
+                GG..GC.......G..G.P......
+                GC..G........C..GGGGGGG..
+                GC..GCGGGGC..............
+                GC......P........P.......
+                GG...........GGGGGGGGGG..
+                `,
+                // Nivel 7
+                `
+                GG...........GGGGGGGGGG..
+                GC...........GCCCC.......
+                GC......GGGGGG.....P.....
+                GC..G...............GGG..
+                GG..GC...................
+                C...GGGGG..GGGGGG........
+                C.......G....G.....GC....
+                C.......GP...G.....G.....
+                C...C...G..GGG..G..G.....
+                C...G.......SS..G..G.SS..
+                C.J.G.......SS..G..G.SS..
+                C...C...G..GGG..G..G.....
+                C.......G....G.....G.....
+                C.......G....G.....GC....
+                C...GGGGG..GGGGGG........
+                GG..GC...................
+                GC..G..............PGGG..
+                GC......GGGGGGP..........
+                GC...........GCCCCC......
+                GG...........GGGGGGGGGG..
+                `,
+                // Nivel 8
+                `
+                GG...........GGGGGGGGGG..
+                GC...........GCCCC.......
+                GC......GGG..G....PP.....
+                GC..G...G........GGG..G..
+                GG..GC..G........G....G..
+                C...GG..CGGGGGC..C....G..
+                C...................CGG..
+                C........................
+                C...G...G..GGG..C........
+                C...G...G..GSS..G..C.SS..
+                C.J.GP..G..GSS..G..C.SS..
+                C...GP..G..GGG..C........
+                C........................
+                C...................CGG..
+                C...GG..CGGGGGC..C....G..
+                GG..GC..G........GPP..G..
+                GC..G...G........GGG..G..
+                GC......GGG..G...........
+                GC...........GCCCCC......
+                GG...........GGGGGGGGGG..
+                `
+            ]
+        };
+
+        function parseLevelMap(cat, level) {
+            const raw = (LEVEL_MAPS[cat] || [])[level - 1];
+            if (!raw) return null;
+
+            const rows = (Array.isArray(raw) ? raw : String(raw).split('\n'))
+                .map(r => r.trim())
+                .filter(r => r.length > 0);
+
+            const cols = Math.max(...rows.map(r => r.length));
+            rows.forEach((r, i) => {
+                if (r.length !== cols) console.warn(`[Mapa ${cat} ${level}] la fila ${i + 1} tiene ${r.length} columnas (las demás ${cols}).`);
+            });
+
+            const tile = Math.floor(Math.min(SCREEN_W / cols, SCREEN_H / rows.length));
+            const offX = Math.floor((SCREEN_W - cols * tile) / 2);
+            const offY = Math.floor((SCREEN_H - rows.length * tile) / 2);
+
+            const map = { tile, solids: [], cracks: [], survivors: [], exits: [], player: null };
+
+            for (let r = 0; r < rows.length; r++) {
+                for (let c = 0; c < rows[r].length; c++) {
+                    const pos = { x: offX + c * tile + tile / 2, y: offY + r * tile + tile / 2 };
+                    switch (rows[r][c].toUpperCase()) {
+                        case 'G': map.solids.push(pos); break;
+                        case 'C': map.cracks.push(pos); break;
+                        case 'P': map.survivors.push(pos); break;
+                        case 'S': map.exits.push(pos); break;
+                        case 'J': map.player = pos; break;
+                    }
+                }
+            }
+            return map;
+        }
+
+        // Nombre obligatorio antes de comenzar (letras y números, 3 a 10 caracteres)
+        const nameInput = document.getElementById('player-name');
+        const startButton = document.getElementById('btn-start-game');
+        const nameHint = document.getElementById('name-hint');
+        const validPlayerName = value => /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]{3,10}$/.test(value.trim());
+        nameInput.addEventListener('input', () => {
+            const clean = nameInput.value.trim();
+            const valid = validPlayerName(clean);
+            startButton.disabled = !valid;
+            nameHint.textContent = valid ? `¡Identidad lista: Rescatista ${clean}!` : 'Solo letras y números (3 a 10 caracteres).';
+            nameHint.style.color = valid ? '#2ecc71' : '#f1c40f';
+        });
+        startButton.onclick = function() {
+            const clean = nameInput.value.trim();
+            if (!validPlayerName(clean)) return;
+            GameState.playerName = clean;
+            SFX.init();
+            SFX.playMenuMusic();
+            const overlay = document.getElementById('start-overlay');
+            if (overlay) overlay.remove();
+            if (game.scene.keys['BootScene']) {
+                game.scene.stop('BootScene');
+                game.scene.start('IntroMissionScene');
+            }
+        };
+
+        function BootScene() { Phaser.Scene.call(this, { key: 'BootScene' }); }
+        BootScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        BootScene.prototype.preload = function () {
+            const gfx = this.make.graphics({ x: 0, y: 0, add: false });
+            gfx.fillStyle(0xf1c40f); gfx.fillCircle(12, 12, 12); gfx.generateTexture('survivorTexture', 24, 24); gfx.clear();
+            gfx.fillStyle(0xe74c3c); gfx.fillTriangle(15, 0, 0, 30, 30, 30); gfx.generateTexture('debrisTexture', 30, 30); gfx.clear();
+            
+            gfx.fillStyle(0x2ecc71); gfx.fillRect(0, 0, 60, 60);
+            gfx.lineStyle(3, 0xffffff); gfx.strokeRect(0, 0, 60, 60);
+            gfx.generateTexture('safeZoneTexture', 60, 60); gfx.clear();
+
+            gfx.fillStyle(0xffffff); gfx.fillRect(0, 0, 26, 50);
+            gfx.fillStyle(0xe74c3c); gfx.fillRect(4, 20, 18, 10); gfx.fillRect(8, 16, 10, 18);
+            gfx.fillStyle(0x3498db); gfx.fillRect(2, 40, 22, 6);
+            gfx.generateTexture('ambulanceTexture', 26, 50); gfx.clear();
+
+            gfx.fillStyle(0x3498db); gfx.fillCircle(4, 4, 4); gfx.generateTexture('waterParticle', 8, 8); gfx.clear();
+            gfx.fillStyle(0xff6600); gfx.fillCircle(3, 3, 3); gfx.generateTexture('fireParticle', 6, 6); gfx.clear();
+
+            if (window.GAME_ART && window.GAME_ART.wall) {
+                this.load.image('wallTexture', window.GAME_ART.wall);
+            } else {
+                gfx.fillStyle(0x7f8c8d); gfx.fillRect(0, 0, 40, 40); gfx.generateTexture('wallTexture', 40, 40); gfx.clear();
+            }
+
+            if (window.GAME_ART && window.GAME_ART.crack) {
+                this.load.image('crackTexture', window.GAME_ART.crack);
+            } else {
+                gfx.fillStyle(0x111111); gfx.fillRect(0, 0, 36, 36); gfx.lineStyle(2, 0xe74c3c); gfx.strokeRect(0, 0, 36, 36); gfx.generateTexture('crackTexture', 36, 36); gfx.clear();
+            }
+
+            if (window.GAME_ART) {
+                if (window.GAME_ART.bg_Terremoto) this.load.image('bg_Terremoto', window.GAME_ART.bg_Terremoto);
+                if (window.GAME_ART.bg_Inundacion) this.load.image('bg_Inundacion', window.GAME_ART.bg_Inundacion);
+                if (window.GAME_ART.bg_Erupcion) this.load.image('bg_Erupcion', window.GAME_ART.bg_Erupcion);
+                
+                // Rescatista sin carga (0 personas)
+                const sheet0 = window.GAME_ART.rescatista_0 || window.GAME_ART.rescatistaSheet;
+                if (sheet0) {
+                    this.load.spritesheet('rescatista', sheet0, { frameWidth: 96, frameHeight: 96 });
+                    this.load.spritesheet('rescatista_0', sheet0, { frameWidth: 96, frameHeight: 96 });
+                }
+                // Rescatista con 1 persona
+                const sheet1 = window.GAME_ART.rescatista_con_1 || window.GAME_ART.rescatista_1;
+                if (sheet1) {
+                    this.load.spritesheet('rescatista_1', sheet1, { frameWidth: 96, frameHeight: 96 });
+                }
+                // Rescatista con 2 personas
+                const sheet2 = window.GAME_ART.rescatista_con_2 || window.GAME_ART.rescatista_2;
+                if (sheet2) {
+                    this.load.spritesheet('rescatista_2', sheet2, { frameWidth: 96, frameHeight: 96 });
+                }
+
+                if (window.GAME_ART.debris) {
+                    this.load.image('debrisTexture', window.GAME_ART.debris);
+                }
+
+                // Ambulancia animada
+                if (window.GAME_ART.ambulancia) {
+                    this.load.spritesheet('ambulanciaSheet', window.GAME_ART.ambulancia, { frameWidth: 32, frameHeight: 32 });
+                }
+                // Heridos animados
+                if (window.GAME_ART.herido_0) {
+                    this.load.spritesheet('herido_0', window.GAME_ART.herido_0, { frameWidth: 48, frameHeight: 48 });
+                }
+                if (window.GAME_ART.herido_1) {
+                    this.load.spritesheet('herido_1', window.GAME_ART.herido_1, { frameWidth: 48, frameHeight: 48 });
+                }
+                // Helipuerto
+                if (window.GAME_ART.helipuerto) {
+                    this.load.image('helipuertoTexture', window.GAME_ART.helipuerto);
+                }
+                // Zona segura baldosa
+                if (window.GAME_ART.zonaSegura) {
+                    this.load.image('zonaSeguraTexture', window.GAME_ART.zonaSegura);
+                }
+                // Aviso y escombros animados
+                if (window.GAME_ART.avisoMira) {
+                    this.load.spritesheet('avisoMira', window.GAME_ART.avisoMira, { frameWidth: 64, frameHeight: 64 });
+                }
+                if (window.GAME_ART.escombros) {
+                    this.load.spritesheet('escombros', window.GAME_ART.escombros, { frameWidth: 64, frameHeight: 64 });
+                }
+                // Menús e interfaz
+                if (window.GAME_ART.menu_presentacion) {
+                    this.load.image('menu_presentacion', window.GAME_ART.menu_presentacion);
+                }
+                if (window.GAME_ART.menu_terremoto) {
+                    this.load.image('menu_terremoto', window.GAME_ART.menu_terremoto);
+                }
+                if (window.GAME_ART.menu_inundacion) {
+                    this.load.image('menu_inundacion', window.GAME_ART.menu_inundacion);
+                }
+                if (window.GAME_ART.menu_erupcion) {
+                    this.load.image('menu_erupcion', window.GAME_ART.menu_erupcion);
+                }
+                if (window.GAME_ART.victoria_final) {
+                    this.load.image('victoria_final', window.GAME_ART.victoria_final);
+                }
+            }
+
+            gfx.fillStyle(0xffffff); gfx.fillRect(0, 0, 100, 100); gfx.generateTexture('hazardTexture', 100, 100);
+
+            this.createRescuerTextures();
+            this.setupTouchListeners();
+        };
+
+        BootScene.prototype.createRescuerTextures = function () {
+            [{ key: 'player_0', scale: 1, label: '0' }, { key: 'player_1', scale: 1.1, label: '1' }, { key: 'player_2', scale: 1.25, label: '2' }].forEach(st => {
+                const gfx = this.make.graphics({ x: 0, y: 0, add: false });
+                gfx.fillStyle(0xe74c3c); gfx.fillCircle(24, 24, 18 * st.scale);
+                gfx.fillStyle(0x900c3f); gfx.fillCircle(24, 20, 10);
+                if (st.label === '1') { gfx.fillStyle(0x2980b9); gfx.fillCircle(14, 30, 8); }
+                else if (st.label === '2') { gfx.fillStyle(0x2980b9); gfx.fillCircle(10, 28, 8); gfx.fillCircle(38, 28, 8); }
+                gfx.generateTexture(st.key, 48, 48);
+            });
+        };
+
+        BootScene.prototype.setupTouchListeners = function () {
+            const bindTouch = (id, key) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); GameState.mobileInput[key] = true; });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); GameState.mobileInput[key] = false; });
+                el.addEventListener('mousedown', () => { GameState.mobileInput[key] = true; });
+                el.addEventListener('mouseup', () => { GameState.mobileInput[key] = false; });
+            };
+            bindTouch('btn-up', 'up'); bindTouch('btn-down', 'down');
+            bindTouch('btn-left', 'left'); bindTouch('btn-right', 'right');
+            bindTouch('btn-action', 'action');
+        };
+
+        BootScene.prototype.create = function () {
+            const tex0 = this.textures.exists('rescatista_0') ? 'rescatista_0' : (this.textures.exists('rescatista') ? 'rescatista' : null);
+            if (tex0 && !this.anims.exists('caminar_0')) {
+                this.anims.create({
+                    key: 'caminar_0',
+                    frames: this.anims.generateFrameNumbers(tex0, { start: 0, end: 3 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+            if (tex0 && !this.anims.exists('caminar')) {
+                this.anims.create({
+                    key: 'caminar',
+                    frames: this.anims.generateFrameNumbers(tex0, { start: 0, end: 3 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+            if (this.textures.exists('rescatista_1') && !this.anims.exists('caminar_1')) {
+                this.anims.create({
+                    key: 'caminar_1',
+                    frames: this.anims.generateFrameNumbers('rescatista_1', { start: 0, end: 3 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+            if (this.textures.exists('rescatista_2') && !this.anims.exists('caminar_2')) {
+                this.anims.create({
+                    key: 'caminar_2',
+                    frames: this.anims.generateFrameNumbers('rescatista_2', { start: 0, end: 3 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+
+            // Ambulancia parpadeante
+            if (this.textures.exists('ambulanciaSheet') && !this.anims.exists('ambulancia_blink')) {
+                this.anims.create({
+                    key: 'ambulancia_blink',
+                    frames: [
+                        { key: 'ambulanciaSheet', frame: 0, duration: 250 },
+                        { key: 'ambulanciaSheet', frame: 1, duration: 250 }
+                    ],
+                    repeat: -1
+                });
+            }
+
+            // Heridos animados
+            if (this.textures.exists('herido_0') && !this.anims.exists('herido_0_anim')) {
+                this.anims.create({
+                    key: 'herido_0_anim',
+                    frames: [
+                        { key: 'herido_0', frame: 0 },
+                        { key: 'herido_0', frame: 1 },
+                        { key: 'herido_0', frame: 0 },
+                        { key: 'herido_0', frame: 2 }
+                    ],
+                    frameRate: 4,
+                    repeat: -1
+                });
+            }
+            if (this.textures.exists('herido_1') && !this.anims.exists('herido_1_anim')) {
+                this.anims.create({
+                    key: 'herido_1_anim',
+                    frames: [
+                        { key: 'herido_1', frame: 0 },
+                        { key: 'herido_1', frame: 1 },
+                        { key: 'herido_1', frame: 0 },
+                        { key: 'herido_1', frame: 2 }
+                    ],
+                    frameRate: 4,
+                    repeat: -1
+                });
+            }
+
+            // Aviso de escombros (3 frames en 700ms = ~4.3 fps, una sola vez)
+            if (this.textures.exists('avisoMira') && !this.anims.exists('aviso_anim')) {
+                this.anims.create({
+                    key: 'aviso_anim',
+                    frames: this.anims.generateFrameNumbers('avisoMira', { start: 0, end: 2 }),
+                    frameRate: 4,
+                    repeat: 0
+                });
+            }
+            // Caída de escombros (5 frames a 10 fps, una sola vez)
+            if (this.textures.exists('escombros') && !this.anims.exists('escombros_anim')) {
+                this.anims.create({
+                    key: 'escombros_anim',
+                    frames: this.anims.generateFrameNumbers('escombros', { start: 0, end: 4 }),
+                    frameRate: 10,
+                    repeat: 0
+                });
+            }
+        };
+
+        // =====================================================================
+        //  PANTALLA 2: PRESENTACIÓN DE LA MISIÓN (Cinemática / Lore)
+        // =====================================================================
+        function IntroMissionScene() { Phaser.Scene.call(this, { key: 'IntroMissionScene' }); }
+        IntroMissionScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        IntroMissionScene.prototype.create = function () {
+            SFX.playMenuMusic();
+
+            // Fondo ilustrado
+            if (this.textures.exists('menu_presentacion')) {
+                const bg = this.add.image(400, 300, 'menu_presentacion');
+                bg.setDisplaySize(800, 600);
+            } else {
+                this.add.rectangle(400, 300, 800, 600, 0x0a0d14);
+            }
+
+            // Capa oscura semitransparente para legibilidad
+            const overlayGfx = this.add.graphics();
+            overlayGfx.fillStyle(0x05070b, 0.82);
+            overlayGfx.fillRect(0, 0, 800, 600);
+
+            // Borde luminoso sutil superior e inferior
+            const borderGfx = this.add.graphics();
+            borderGfx.lineStyle(2, 0xe74c3c, 0.6);
+            borderGfx.strokeLineShape(new Phaser.Geom.Line(50, 45, 750, 45));
+            borderGfx.lineStyle(2, 0x3498db, 0.6);
+            borderGfx.strokeLineShape(new Phaser.Geom.Line(50, 555, 750, 555));
+
+            // Encabezado
+            this.add.text(400, 80, 'ESTADO DE EMERGENCIA NACIONAL', {
+                fontSize: '13px',
+                color: '#e74c3c',
+                fontStyle: 'bold',
+                letterSpacing: 3
+            }).setOrigin(0.5);
+
+            this.add.text(400, 115, 'MISIÓN: OPERACIÓN RUTA DE ESCAPE', {
+                fontSize: '24px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Caja de texto central estilizada
+            const textBox = this.add.rectangle(400, 275, 680, 240, 0x0f1520, 0.7);
+            textBox.setStrokeStyle(1, 0x2a3b50, 0.8);
+
+            const introText = 
+                'UNA EMERGENCIA HA CAMBIADO TODO.\n\n' +
+                'Ciudades destruidas, caminos bloqueados y personas esperando ser rescatadas.\n\n' +
+                'Tu misión es ingresar a las zonas afectadas, localizar a los sobrevivientes\n' +
+                'y llevarlos hasta un puesto de rescate seguro.\n\n' +
+                'Cada segundo cuenta. Cada rescate importa.\n\n' +
+                '¿ESTÁS PREPARADO?';
+
+            this.add.text(400, 275, introText, {
+                fontSize: '17px',
+                color: '#ecf0f1',
+                fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                align: 'center',
+                lineSpacing: 4
+            }).setOrigin(0.5);
+
+            // Botón destacado: ACTIVAR MISIÓN
+            const btnW = 320, btnH = 60, btnX = 400, btnY = 465;
+            const btnBg = this.add.rectangle(btnX, btnY, btnW, btnH, 0xe74c3c)
+                .setInteractive({ useHandCursor: true });
+            btnBg.setStrokeStyle(2, 0xff7675);
+
+            const btnText = this.add.text(btnX, btnY, 'ACTIVAR MISIÓN  ►', {
+                fontSize: '20px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Efectos hover discretos
+            btnBg.on('pointerover', () => {
+                btnBg.setFillStyle(0xd63031);
+                btnBg.setScale(1.03);
+                btnText.setScale(1.03);
+            });
+            btnBg.on('pointerout', () => {
+                btnBg.setFillStyle(0xe74c3c);
+                btnBg.setScale(1);
+                btnText.setScale(1);
+            });
+            btnBg.on('pointerdown', () => {
+                SFX.init();
+                this.cameras.main.fadeOut(250, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('CatastropheSelectScene');
+                });
+            });
+
+            this.cameras.main.fadeIn(300, 0, 0, 0);
+        };
+
+        // =====================================================================
+        //  PANTALLA 3: SELECCIÓN DE MISIONES (Dashboard con Carnet y Tarjetas)
+        // =====================================================================
+        function CatastropheSelectScene() { Phaser.Scene.call(this, { key: 'CatastropheSelectScene' }); }
+        CatastropheSelectScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        CatastropheSelectScene.prototype.create = function () {
+            SFX.playMenuMusic();
+
+            // Fondo oscuro general
+            this.add.rectangle(400, 300, 800, 600, 0x080b11);
+
+            // Borde superior cinemático
+            const topBar = this.add.graphics();
+            topBar.fillStyle(0x0e131d, 1);
+            topBar.fillRect(0, 0, 800, 60);
+            topBar.lineStyle(2, 0xe74c3c, 0.8);
+            topBar.strokeLineShape(new Phaser.Geom.Line(0, 60, 800, 60));
+
+            this.add.text(400, 25, 'CENTRO DE OPERACIONES DE RESCATE', {
+                fontSize: '18px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                letterSpacing: 3
+            }).setOrigin(0.5);
+
+            this.add.text(400, 45, 'SELECCIONÁ EL ESCENARIO DE INTERVENCIÓN', {
+                fontSize: '11px',
+                color: '#3498db',
+                fontStyle: 'bold',
+                letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  TARJETA LATERAL PERMANENTE (Carnet del Rescatista)
+            // -------------------------------------------------------------
+            const cardX = 115, cardY = 325, cardW = 190, cardH = 490;
+            const carnetBg = this.add.rectangle(cardX, cardY, cardW, cardH, 0x101722);
+            carnetBg.setStrokeStyle(2, 0x223247);
+
+            // Franja roja superior del carnet
+            const carnetHeader = this.add.rectangle(cardX, cardY - cardH/2 + 18, cardW, 36, 0xe74c3c);
+            this.add.text(cardX, cardY - cardH/2 + 18, 'BRIGADA DE RESCATE', {
+                fontSize: '11px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                letterSpacing: 1
+            }).setOrigin(0.5);
+
+            // Silueta / Icono de rescatista (usamos el sprite rescatista si existe)
+            const rescuerBox = this.add.rectangle(cardX, cardY - 145, 90, 90, 0x080b10);
+            rescuerBox.setStrokeStyle(1, 0x34495e);
+            if (this.textures.exists('rescatista_0') || this.textures.exists('rescatista')) {
+                const tex = this.textures.exists('rescatista_0') ? 'rescatista_0' : 'rescatista';
+                const s = this.add.sprite(cardX, cardY - 145, tex, 0);
+                s.setDisplaySize(70, 70);
+            } else {
+                this.add.text(cardX, cardY - 145, '👤', { fontSize: '42px' }).setOrigin(0.5);
+            }
+
+            // Datos dinámicos del rescatista
+            const pName = (GameState.playerName || 'RESCATISTA').toUpperCase();
+            this.add.text(cardX, cardY - 75, 'NOMBRE DEL RESCATISTA', {
+                fontSize: '9px', color: '#7f8c8d', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY - 55, pName, {
+                fontSize: '15px', color: '#f1c40f', fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            this.add.text(cardX, cardY - 25, 'CATEGORÍA', {
+                fontSize: '9px', color: '#7f8c8d', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY - 10, 'RESCATISTA', {
+                fontSize: '12px', color: '#e74c3c', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+
+            this.add.text(cardX, cardY + 20, 'DIVISIÓN', {
+                fontSize: '9px', color: '#7f8c8d', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY + 35, 'ALFA - SECTOR A', {
+                fontSize: '12px', color: '#3498db', fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            this.add.text(cardX, cardY + 65, 'SERIE OFICIAL', {
+                fontSize: '9px', color: '#7f8c8d', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY + 80, 'R-700', {
+                fontSize: '13px', color: '#95a5a6', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Récord HÉROE abajo en el carnet
+            const hero = getHeroRecord();
+            const heroBox = this.add.rectangle(cardX, cardY + 165, cardW - 20, 65, 0x090d14);
+            heroBox.setStrokeStyle(1, 0xf39c12, 0.6);
+            this.add.text(cardX, cardY + 148, '🏆 HÉROE DESTACADO', {
+                fontSize: '9px', color: '#f39c12', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY + 168, hero ? hero.name.toUpperCase() : 'SIN RÉCORD', {
+                fontSize: '12px', color: '#ffffff', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.add.text(cardX, cardY + 184, hero ? formatTime(hero.seconds) : '--:--', {
+                fontSize: '11px', color: '#f1c40f'
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  3 TARJETAS GRANDES DE ESCENARIOS
+            // -------------------------------------------------------------
+            const scenarios = [
+                {
+                    key: 'Terremoto',
+                    title: 'TERREMOTO',
+                    color: 0x8b4513,
+                    borderColor: 0xd35400,
+                    imgKey: 'menu_terremoto',
+                    desc: 'Derrumbes y grietas masivas',
+                    x: 320
+                },
+                {
+                    key: 'Inundacion',
+                    title: 'INUNDACIÓN',
+                    color: 0x1e90ff,
+                    borderColor: 0x0984e3,
+                    imgKey: 'menu_inundacion',
+                    desc: 'Caminos anegados y corrientes',
+                    x: 500
+                },
+                {
+                    key: 'Erupcion',
+                    title: 'ERUPCIÓN VOLCÁNICA',
+                    color: 0xd35400,
+                    borderColor: 0xe74c3c,
+                    imgKey: 'menu_erupcion',
+                    desc: 'Lava ardiente y lluvia ígnea',
+                    x: 680
+                }
+            ];
+
+            const cardWidth = 165;
+            const cardHeight = 490;
+
+            scenarios.forEach(sc => {
+                const cx = sc.x;
+                const cy = cardY;
+
+                // Contenedor principal de la tarjeta
+                const sBg = this.add.rectangle(cx, cy, cardWidth, cardHeight, 0x101722)
+                    .setInteractive({ useHandCursor: true });
+                sBg.setStrokeStyle(2, 0x243347);
+
+                // Marco de imagen
+                const imgBoxY = cy - 120;
+                const imgBoxH = 200;
+                if (this.textures.exists(sc.imgKey)) {
+                    const img = this.add.image(cx, imgBoxY, sc.imgKey);
+                    img.setDisplaySize(cardWidth - 8, imgBoxH);
+                } else {
+                    this.add.rectangle(cx, imgBoxY, cardWidth - 8, imgBoxH, sc.color);
+                }
+
+                // Marco visual alrededor de la imagen
+                const frameGfx = this.add.graphics();
+                frameGfx.lineStyle(2, sc.borderColor, 0.8);
+                frameGfx.strokeRect(cx - (cardWidth - 8) / 2, imgBoxY - imgBoxH / 2, cardWidth - 8, imgBoxH);
+
+                // Título de la catástrofe
+                const titleText = this.add.text(cx, cy + 10, sc.title, {
+                    fontSize: sc.title.length > 12 ? '13px' : '15px',
+                    color: '#ffffff',
+                    fontStyle: 'bold',
+                    letterSpacing: 1,
+                    align: 'center'
+                }).setOrigin(0.5);
+
+                // Descripción corta
+                this.add.text(cx, cy + 32, sc.desc, {
+                    fontSize: '10px',
+                    color: '#7f8c8d',
+                    align: 'center',
+                    wordWrap: { width: cardWidth - 14 }
+                }).setOrigin(0.5);
+
+                // Progreso real guardado
+                const unlockedLvl = GameState.progress[sc.key] || 1;
+                this.add.text(cx, cy + 85, 'PROGRESO REAL', {
+                    fontSize: '9px', color: '#3498db', fontStyle: 'bold', letterSpacing: 1
+                }).setOrigin(0.5);
+
+                this.add.text(cx, cy + 105, `NIVEL ${unlockedLvl} / 8`, {
+                    fontSize: '15px', color: '#f1c40f', fontStyle: 'bold'
+                }).setOrigin(0.5);
+
+                // Barra de progreso visual
+                const barW = cardWidth - 30;
+                const barH = 8;
+                const barY = cy + 125;
+                this.add.rectangle(cx, barY, barW, barH, 0x090d14);
+                const progressFillW = Math.max(4, (barW * (unlockedLvl / 8)));
+                const fillRect = this.add.rectangle(cx - barW/2 + progressFillW/2, barY, progressFillW, barH, sc.borderColor);
+
+                // Botón DESPLEGAR
+                const btnActionY = cy + 185;
+                const btnAction = this.add.rectangle(cx, btnActionY, cardWidth - 24, 44, 0x1b2738);
+                btnAction.setStrokeStyle(1, sc.borderColor);
+
+                const btnActionText = this.add.text(cx, btnActionY, 'DESPLEGAR  ►', {
+                    fontSize: '12px',
+                    color: '#ffffff',
+                    fontStyle: 'bold',
+                    letterSpacing: 1
+                }).setOrigin(0.5);
+
+                // Efectos hover en toda la tarjeta
+                sBg.on('pointerover', () => {
+                    sBg.setStrokeStyle(2, sc.borderColor);
+                    btnAction.setFillStyle(sc.borderColor);
+                    sBg.setScale(1.02);
+                });
+                sBg.on('pointerout', () => {
+                    sBg.setStrokeStyle(2, 0x243347);
+                    btnAction.setFillStyle(0x1b2738);
+                    sBg.setScale(1);
+                });
+                sBg.on('pointerdown', () => {
+                    SFX.init();
+                    GameState.catastrophe = sc.key;
+                    this.cameras.main.fadeOut(200, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start('LevelSelectScene');
+                    });
+                });
+            });
+
+            this.cameras.main.fadeIn(300, 0, 0, 0);
+        };
+
+                // =====================================================================
+        //  PANTALLA: SELECCIÓN DE NIVELES (Con Alerta Táctica y Manual de Campo)
+        // =====================================================================
+        function LevelSelectScene() { Phaser.Scene.call(this, { key: 'LevelSelectScene' }); }
+        LevelSelectScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        LevelSelectScene.prototype.create = function () {
+            SFX.playMenuMusic();
+            const cat = GameState.catastrophe;
+            const maxUnlocked = GameState.progress[cat] || 1;
+
+            // Fondo oscuro cinemático
+            this.add.rectangle(400, 300, 800, 600, 0x080b11);
+
+            // Borde superior cinemático
+            const topBar = this.add.graphics();
+            topBar.fillStyle(0x0e131d, 1);
+            topBar.fillRect(0, 0, 800, 52);
+            topBar.lineStyle(2, 0xe74c3c, 0.8);
+            topBar.strokeLineShape(new Phaser.Geom.Line(0, 52, 800, 52));
+
+            this.add.text(400, 20, `SECTOR DE INTERVENCIÓN: ${cat.toUpperCase()}`, {
+                fontSize: '17px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            this.add.text(400, 38, 'ELEGÍ EL NIVEL DE MISIÓN A DESPLEGAR', {
+                fontSize: '10px', color: '#3498db', fontStyle: 'bold', letterSpacing: 1.5
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  ALERTA TÁCTICA ROJA DE CATÁSTROFE (GRANDE Y VISIBLE)
+            // -------------------------------------------------------------
+            const alertConfigs = {
+                Terremoto: {
+                    alert: '⚠️ ALERTA ROJA: DERRUMBES, GRIETAS Y NUBE DE POLVO EN SUSPENSIÓN',
+                    equip: 'EQUIPO DE CAMPO: Casco de impacto reforzado, botas de alta tracción y mascarilla antipolvo.'
+                },
+                Inundacion: {
+                    alert: '⚠️ ALERTA ROJA: CORRIENTES SUBURBANAS Y DESBORDE DE AGUA MORTAL',
+                    equip: 'EQUIPO DE CAMPO: Traje estanco, chaleco hidrostático y arnés de rescate anfibio.'
+                },
+                Erupcion: {
+                    alert: '⚠️ ALERTA ROJA: RÍO DE LAVA ARDIENTE, GASES TÓXICOS Y LLUVIA ÍGNEA',
+                    equip: 'EQUIPO DE CAMPO: Máscara con filtro de ceniza, visor atérmico y traje ignífugo clase A.'
+                }
+            };
+            const currentAlert = alertConfigs[cat] || alertConfigs.Terremoto;
+
+            const alertBox = this.add.rectangle(400, 82, 740, 42, 0x2c0b0e, 0.85);
+            alertBox.setStrokeStyle(1.5, 0xe74c3c, 0.9);
+
+            this.add.text(400, 75, currentAlert.alert, {
+                fontSize: '11px', color: '#ff7675', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+
+            this.add.text(400, 92, currentAlert.equip, {
+                fontSize: '10px', color: '#f5cd79', fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  GRID DE 8 NIVELES (Estilo tarjetas tácticas)
+            // -------------------------------------------------------------
+            for (let i = 1; i <= 8; i++) {
+                const col = (i - 1) % 4;
+                const row = Math.floor((i - 1) / 4);
+                const x = 145 + col * 170;
+                const y = 160 + row * 82;
+                const isUnlocked = i <= maxUnlocked;
+                const stars = GameState.progress.stars[`${cat}_${i}`] || 0;
+
+                const boxColor = isUnlocked ? 0x132235 : 0x0c1017;
+                const strokeColor = isUnlocked ? (i === maxUnlocked ? 0xf1c40f : 0x3498db) : 0x222a35;
+
+                const btn = this.add.rectangle(x, y, 150, 70, boxColor).setInteractive({ useHandCursor: isUnlocked });
+                btn.setStrokeStyle(1.5, strokeColor);
+
+                const lvlTitle = this.add.text(x, y - 14, `SECTOR ${i}`, {
+                    fontSize: '15px', color: isUnlocked ? '#ffffff' : '#636e72', fontStyle: 'bold', letterSpacing: 1
+                }).setOrigin(0.5);
+
+                if (isUnlocked) {
+                    const starsTxt = this.add.text(x, y + 14, '★'.repeat(stars) + '☆'.repeat(3 - stars), {
+                        fontSize: '16px', color: '#f1c40f'
+                    }).setOrigin(0.5);
+
+                    btn.on('pointerover', () => {
+                        btn.setFillStyle(0x1a334d);
+                        btn.setScale(1.03);
+                        lvlTitle.setScale(1.03);
+                        starsTxt.setScale(1.03);
+                    });
+                    btn.on('pointerout', () => {
+                        btn.setFillStyle(boxColor);
+                        btn.setScale(1);
+                        lvlTitle.setScale(1);
+                        starsTxt.setScale(1);
+                    });
+                    btn.on('pointerdown', () => {
+                        GameState.currentLevel = i;
+                        GameState.totalRescued = 0;
+                        this.scene.start('GameScene');
+                    });
+                } else {
+                    this.add.text(x, y + 14, '🔒 BLOQUEADO', {
+                        fontSize: '11px', color: '#7f8c8d', fontStyle: 'bold'
+                    }).setOrigin(0.5);
+                }
+            }
+
+            // -------------------------------------------------------------
+            //  PANEL DE PROTOCOLO DE RESCATE (REGLAS Y ADVERTENCIAS)
+            // -------------------------------------------------------------
+            const protoBox = this.add.rectangle(400, 365, 740, 140, 0x0d1420, 0.9);
+            protoBox.setStrokeStyle(1.5, 0x243347);
+
+            // Título del protocolo
+            const protoHeader = this.add.rectangle(400, 310, 740, 26, 0x1a2638);
+            this.add.text(400, 310, 'PROTOCOLO OFICIAL DE RESCATE EN CAMPO', {
+                fontSize: '11px', color: '#3498db', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // 3 Columnas informativas detalladas
+            // Columna 1: Zonas Seguras
+            this.add.text(170, 340, '🟢 ZONAS DE EVACUACIÓN', {
+                fontSize: '11px', color: '#2ecc71', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.add.text(170, 380, '• Nivel 1 al 3: 1 puesto seguro.\n• Nivel 4 al 8: ¡2 PUESTOS SEGUROS!\n  (Centro y Extremo Este del mapa).', {
+                fontSize: '10px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // Columna 2: Ambulancia
+            this.add.text(400, 340, '🚑 UNIDAD MÉDICA MÓVIL', {
+                fontSize: '11px', color: '#e74c3c', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.add.text(400, 380, '• Activa desde el NIVEL 4.\n• Cruza con sirenas y balizas.\n• Curación de salud al tocarla.', {
+                fontSize: '10px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // Columna 3: Controles y Carga
+            this.add.text(630, 340, '🎒 CAPACIDAD Y MANDOS', {
+                fontSize: '11px', color: '#f1c40f', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.add.text(630, 380, '• Capacidad: Hasta 2 personas.\n• [WASD / Flechas] Moverse.\n• [E / Espacio / Acción] Cargar/Dejar.', {
+                fontSize: '10px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  BOTONES DE NAVEGACIÓN INFERIOR
+            // -------------------------------------------------------------
+            const btnBack = this.add.rectangle(400, 520, 240, 42, 0x1f2d3d).setInteractive({ useHandCursor: true });
+            btnBack.setStrokeStyle(1, 0x3d566e);
+            const btnBackTxt = this.add.text(400, 520, '◄ CAMBIAR ESCENARIO', {
+                fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+
+            btnBack.on('pointerover', () => {
+                btnBack.setFillStyle(0x2c3e50);
+                btnBack.setScale(1.02);
+            });
+            btnBack.on('pointerout', () => {
+                btnBack.setFillStyle(0x1f2d3d);
+                btnBack.setScale(1);
+            });
+            btnBack.on('pointerdown', () => this.scene.start('CatastropheSelectScene'));
+
+            this.cameras.main.fadeIn(250, 0, 0, 0);
+        };
+
+        function GameScene() { Phaser.Scene.call(this, { key: 'GameScene' }); }
+        GameScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        GameScene.prototype.create = function () {
+            const catData = CATASTROPHE_DATA[GameState.catastrophe];
+            const levelConfig = catData.levels[GameState.currentLevel - 1];
+
+            if (GameState.currentLevel === 8) {
+                SFX.playLevel8Music();
+            } else {
+                SFX.playLevelsMusic();
+            }
+
+            this.isPaused = false;
+            this.baseSpeed = 220;
+            this.carrying = 0;
+            this.maxCapacity = 2;
+            this.playerHealth = 6;
+            this.initialHealth = 6;
+            this.deliveredSurvivors = 0;
+            this.lostSurvivors = 0;
+            this.levelFinished = false;
+            this.gameOverStarted = false;
+            this.targetSurvivors = levelConfig.survivorCount;
+
+            // Mapa propio de este nivel (null = al azar como antes)
+            const map = parseLevelMap(GameState.catastrophe, GameState.currentLevel);
+            if (map && map.survivors.length > 0) this.targetSurvivors = map.survivors.length;
+            this.initialTime = levelConfig.timeLimit;
+            this.timeLeft = levelConfig.timeLimit;
+            this.crackCooldown = 0;
+
+            this.droppedPositions = [];
+
+            this.cameras.main.setBackgroundColor(catData.color);
+
+            // Fondo temático según catástrofe
+            const bgKey = 'bg_' + GameState.catastrophe;
+            if (this.textures.exists(bgKey)) {
+                this.add.image(400, 300, bgKey).setDisplaySize(800, 600).setDepth(-10);
+            }
+
+            this.walls = this.physics.add.staticGroup();
+            this.cracks = this.physics.add.staticGroup();
+            this.survivors = this.physics.add.group();
+            this.debrisGroup = this.physics.add.group();
+            this.safeZonesGroup = this.physics.add.staticGroup();
+
+            if (map && map.exits.length > 0) {
+                const szTex = this.textures.exists('zonaSeguraTexture') ? 'zonaSeguraTexture' : 'safeZoneTexture';
+                map.exits.forEach(pos => {
+                    this.safeZonesGroup.create(pos.x, pos.y, szTex).setDisplaySize(map.tile, map.tile).refreshBody();
+                });
+            } else if (GameState.currentLevel >= 4) {
+                const szTex = this.textures.exists('zonaSeguraTexture') ? 'zonaSeguraTexture' : 'safeZoneTexture';
+                this.safeZonesGroup.create(400, 300, szTex).setDisplaySize(60, 60).refreshBody();
+                this.safeZonesGroup.create(720, 300, szTex).setDisplaySize(60, 60).refreshBody();
+            } else {
+                const szTex = this.textures.exists('zonaSeguraTexture') ? 'zonaSeguraTexture' : 'safeZoneTexture';
+                this.safeZonesGroup.create(720, 300, szTex).setDisplaySize(60, 60).refreshBody();
+            }
+
+            let roadGfx = this.add.graphics();
+            roadGfx.setDepth(-5);
+            roadGfx.fillStyle(0x222222, 0.4);
+            roadGfx.fillRect(735, 0, 50, 600);
+
+            if (map) {
+                map.solids.forEach(pos => this.walls.create(pos.x, pos.y, 'wallTexture').setDisplaySize(map.tile, map.tile).refreshBody());
+                const cs = Math.round(map.tile * 0.9);
+                map.cracks.forEach(pos => this.cracks.create(pos.x, pos.y, 'crackTexture').setDisplaySize(cs, cs).refreshBody());
+            } else {
+                for (let i = 0; i < levelConfig.wallCount; i++) {
+                    this.walls.create(Phaser.Math.Between(100, 680), Phaser.Math.Between(80, 520), 'wallTexture').setDisplaySize(40, 40).refreshBody();
+                }
+
+                for (let i = 0; i < levelConfig.crackCount; i++) {
+                    this.cracks.create(Phaser.Math.Between(120, 660), Phaser.Math.Between(80, 520), 'crackTexture').setDisplaySize(36, 36).refreshBody();
+                }
+            }
+
+            if (map && map.survivors.length > 0) {
+                map.survivors.forEach(pos => {
+                    this.createSurvivorSprite(pos.x, pos.y);
+                });
+            } else {
+                for (let i = 0; i < this.targetSurvivors; i++) {
+                    let validPos = this.getValidSpawnPosition();
+                    this.createSurvivorSprite(validPos.x, validPos.y);
+                }
+            }
+
+            const startPos = (map && map.player) ? map.player : { x: 80, y: 300 };
+            const useRealRescatista = this.textures.exists('rescatista_0') || this.textures.exists('rescatista');
+            const startTex = this.textures.exists('rescatista_0') ? 'rescatista_0' : (useRealRescatista ? 'rescatista' : 'player_0');
+            this.player = this.physics.add.sprite(startPos.x, startPos.y, startTex);
+            if (useRealRescatista) {
+                this.player.setDisplaySize(44, 44);
+                this.player.setFrame(0);
+                ['0', '1', '2'].forEach(idx => {
+                    const tKey = idx === '0' ? (this.textures.exists('rescatista_0') ? 'rescatista_0' : 'rescatista') : 'rescatista_' + idx;
+                    const aKey = 'caminar_' + idx;
+                    if (this.textures.exists(tKey) && !this.anims.exists(aKey)) {
+                        this.anims.create({
+                            key: aKey,
+                            frames: this.anims.generateFrameNumbers(tKey, { start: 0, end: 3 }),
+                            frameRate: 8,
+                            repeat: -1
+                        });
+                    }
+                });
+                if (!this.anims.exists('caminar') && this.anims.exists('caminar_0')) {
+                    this.anims.create({
+                        key: 'caminar',
+                        frames: this.anims.generateFrameNumbers(this.textures.exists('rescatista_0') ? 'rescatista_0' : 'rescatista', { start: 0, end: 3 }),
+                        frameRate: 8,
+                        repeat: -1
+                    });
+                }
+            }
+            if (map) this.player.body.setSize(Math.min(28, map.tile - 4), Math.min(28, map.tile - 4)); // para pasar por pasillos de 1 casilla
+            this.player.setCollideWorldBounds(true);
+
+            const particleTex = GameState.catastrophe === 'Inundacion' ? 'waterParticle' : 'fireParticle';
+            this.particles = this.add.particles(0, 0, particleTex, {
+                speed: { min: 20, max: 50 },
+                scale: { start: 1, end: 0 },
+                blendMode: 'ADD',
+                emitting: false
+            });
+
+            this.ambulanceWarnText = this.add.text(760, 30, '🚑 ¡AMBULANCIA EN CAMINO!', {
+                fontSize: '13px', color: '#ff3333', fontStyle: 'bold', backgroundColor: '#000000dd', padding: { x: 8, y: 4 }
+            }).setOrigin(1, 0.5).setVisible(false);
+
+            this.hasAmbulance = levelConfig.hasAmbulance;
+            if (this.hasAmbulance) {
+                const ambulanceTex = this.textures.exists('ambulanciaSheet') ? 'ambulanciaSheet' : 'ambulanceTexture';
+                this.ambulance = this.physics.add.sprite(760, -60, ambulanceTex);
+                if (ambulanceTex === 'ambulanciaSheet') {
+                    this.ambulance.setDisplaySize(32, 32);
+                    // Pixel perfect
+                    if (this.ambulance.texture && this.ambulance.texture.source && this.ambulance.texture.source[0]) {
+                        this.ambulance.texture.source[0].scaleMode = 0; // NEAREST
+                    }
+                }
+                this.ambulanceActive = false;
+                this.time.delayedCall(3000, () => {
+                    this.scheduleAmbulance();
+                });
+            }
+
+            this.hazardSpeed = levelConfig.hazardSpeed;
+            if (this.hazardSpeed > 0) {
+                let tintColor = 0x00aaff;
+                if (GameState.catastrophe === 'Erupcion') tintColor = 0xff3300;
+                else if (GameState.catastrophe === 'Terremoto') tintColor = 0x5d4037;
+
+                this.hazard = this.add.sprite(0, 0, 'hazardTexture').setOrigin(0, 0).setTint(tintColor).setAlpha(0.65);
+                this.physics.add.existing(this.hazard);
+                this.hazard.body.setAllowGravity(false);
+                this.hazard.body.setImmovable(true);
+                this.hazard.setDisplaySize(10, 600);
+            }
+
+            this.physics.add.collider(this.player, this.walls);
+            this.physics.add.overlap(this.player, this.debrisGroup, this.handleDebrisHit, null, this);
+            this.physics.add.overlap(this.player, this.cracks, this.handleCrackStep, null, this);
+            this.physics.add.overlap(this.player, this.safeZonesGroup, this.handleSafeZoneReached, null, this);
+
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this.wasd = this.input.keyboard.addKeys({
+                up: Phaser.Input.Keyboard.KeyCodes.W, down: Phaser.Input.Keyboard.KeyCodes.S,
+                left: Phaser.Input.Keyboard.KeyCodes.A, right: Phaser.Input.Keyboard.KeyCodes.D,
+                pickupE: Phaser.Input.Keyboard.KeyCodes.E, pickupSpace: Phaser.Input.Keyboard.KeyCodes.SPACE,
+                esc: Phaser.Input.Keyboard.KeyCodes.ESC
+            });
+
+            this.debrisTimer = this.time.addEvent({
+                delay: levelConfig.spawnInterval, callback: this.spawnDebris, callbackScope: this, loop: true
+            });
+
+            this.levelTimer = this.time.addEvent({
+                delay: 1000, callback: () => {
+                    if (this.isPaused) return;
+                    this.timeLeft--;
+                    GameState.totalRunSeconds++;
+                    if (this.timeLeft === 10) SFX.setSpeed(1.15);
+                    if (this.timeLeft <= 0) this.gameOver(false, '¡Se acabó el tiempo!');
+                }, loop: true
+            });
+
+            this.uiText = this.add.text(16, 14, `MODO: ${GameState.catastrophe}  |  NIVEL: ${GameState.currentLevel}/${GameState.maxLevels}`, { fontSize: '14px', color: '#ffffff', backgroundColor: '#000000bb', padding: { x: 9, y: 6 } }).setDepth(20);
+            this.clockText = this.add.text(400, 12, '', { fontSize: '30px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#000000dd', padding: { x: 14, y: 5 } }).setOrigin(0.5, 0).setDepth(20);
+            this.healthText = this.add.text(16, 54, '', { fontSize: '24px', color: '#ff5b68', backgroundColor: '#000000bb', padding: { x: 9, y: 5 } }).setDepth(20);
+            this.rescueText = this.add.text(784, 54, '', { fontSize: '21px', color: '#ffffff', backgroundColor: '#000000bb', padding: { x: 10, y: 6 }, fontStyle: 'bold' }).setOrigin(1, 0).setDepth(20);
+            
+            const pauseBtn = this.add.rectangle(740, 30, 90, 32, 0x34495e).setInteractive({ useHandCursor: true });
+            this.add.text(740, 30, '⚙️ PAUSA', { fontSize: '13px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+            pauseBtn.on('pointerdown', () => this.togglePauseMenu());
+
+            this.updateHUD();
+            this.createPauseOverlay();
+        };
+
+        GameScene.prototype.scheduleAmbulance = function () {
+            this.ambulanceTimer = this.time.addEvent({
+                delay: 6000,
+                callback: () => {
+                    if (this.isPaused || this.ambulanceActive) return;
+
+                    this.ambulanceWarnText.setVisible(true);
+                    this.time.delayedCall(1000, () => {
+                        this.ambulanceWarnText.setVisible(false);
+                        this.ambulanceActive = true;
+                        this.ambulance.body.setVelocity(0, 0);
+                        this.ambulance.setPosition(740, -60);
+                        // Arrancar animación si es el spritesheet animado
+                        if (this.textures.exists('ambulanciaSheet') && this.anims.exists('ambulancia_blink')) {
+                            if (!this.ambulance.anims.isPlaying) {
+                                this.ambulance.play('ambulancia_blink');
+                            }
+                        }
+                        this.tweens.add({
+                            targets: this.ambulance,
+                            x: 740, y: 660, duration: 4500, ease: 'Linear',
+                            onComplete: () => {
+                                if (!this.scene.isActive()) return;
+                                this.tweens.add({
+                                    targets: this.ambulance, x: 780, y: 660, duration: 450,
+                                    onComplete: () => this.tweens.add({
+                                        targets: this.ambulance, x: 780, y: -60, duration: 4500, ease: 'Linear',
+                                        onComplete: () => { this.ambulanceActive = false; this.ambulance.setPosition(780, -80); }
+                                    })
+                                });
+                            }
+                        });
+                    });
+                },
+                loop: true
+            });
+        };
+
+        GameScene.prototype.getValidSpawnPosition = function () {
+            let rx, ry, attempts = 0, isOverlap = true;
+
+            while (isOverlap && attempts < 100) {
+                rx = Phaser.Math.Between(80, 680);
+                ry = Phaser.Math.Between(80, 520);
+                isOverlap = false;
+                attempts++;
+
+                if (Phaser.Math.Distance.Between(rx, ry, 400, 300) < 70) isOverlap = true;
+
+                this.walls.getChildren().forEach(wall => {
+                    if (Phaser.Math.Distance.Between(rx, ry, wall.x, wall.y) < 45) isOverlap = true;
+                });
+
+                this.cracks.getChildren().forEach(crack => {
+                    if (Phaser.Math.Distance.Between(rx, ry, crack.x, crack.y) < 40) isOverlap = true;
+                });
+            }
+
+            return { x: rx, y: ry };
+        };
+
+        GameScene.prototype.update = function (time, delta) {
+            if (Phaser.Input.Keyboard.JustDown(this.wasd.esc)) {
+                this.togglePauseMenu();
+            }
+
+            if (this.isPaused || this.levelFinished) return;
+
+            if (this.hazardSpeed > 0 && this.hazard) {
+                let newWidth = this.hazard.displayWidth + (this.hazardSpeed * delta) / 1000;
+                let currentWidth = Math.min(newWidth, 750);
+                
+                this.hazard.setDisplaySize(currentWidth, 600);
+                this.hazard.body.setSize(currentWidth, 600);
+
+                let playerRect = this.player.getBounds();
+                let hazardRect = new Phaser.Geom.Rectangle(0, 0, currentWidth, 600);
+
+                this.survivors.getChildren().forEach((survivor) => {
+                    if (survivor.active) {
+                        let distanceToHazard = survivor.x - currentWidth;
+
+                        if (distanceToHazard <= 0) {
+                            survivor.destroy();
+                            this.lostSurvivors++;
+                            SFX.playHit();
+                            if (this.lostSurvivors >= 2) {
+                                this.gameOver(false, 'Se perdieron dos personas en la catástrofe. ¡Intentá otra vez!');
+                            } else if (this.deliveredSurvivors + this.lostSurvivors >= this.targetSurvivors) {
+                                this.completeLevel();
+                            }
+                        } else if (distanceToHazard < 120) {
+                            survivor.setTint(Math.floor(time / 150) % 2 === 0 ? 0xff0000 : 0xffffff);
+                        } else {
+                            survivor.clearTint();
+                        }
+                    }
+                });
+
+                if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, hazardRect)) {
+                    this.particles.emitParticleAt(this.player.x, this.player.y, 2);
+
+                    if (GameState.catastrophe === 'Erupcion') {
+                        this.playerHealth = 0;
+                        SFX.playHit();
+                        this.gameOver(false, '¡Fuiste consumido por la lava!');
+                    } else if (GameState.catastrophe === 'Inundacion') {
+                        if (!this.hazardDamageCooldown) {
+                            this.playerHealth--;
+                            SFX.playHit();
+                            this.cameras.main.shake(120, 0.01);
+                            
+                            if (this.playerHealth <= 0) {
+                                this.gameOver(false, '¡Te ahogaste en la inundación!');
+                            } else {
+                                this.hazardDamageCooldown = true;
+                                this.time.delayedCall(1500, () => { this.hazardDamageCooldown = false; });
+                            }
+                        }
+                    } else {
+                        if (!this.hazardDamageCooldown) {
+                            this.playerHealth--;
+                            SFX.playHit();
+                            if (this.playerHealth <= 0) {
+                                this.gameOver(false, '¡Sucumbiste al terremoto!');
+                            } else {
+                                this.hazardDamageCooldown = true;
+                                this.time.delayedCall(1200, () => { this.hazardDamageCooldown = false; });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (this.crackCooldown > 0) this.crackCooldown -= delta;
+
+            let currentSpeed = this.baseSpeed;
+            if (this.carrying === 1) currentSpeed *= 0.78;
+            else if (this.carrying === 2) currentSpeed *= 0.50;
+
+            this.player.setVelocity(0);
+
+            let moveX = 0, moveY = 0;
+            const mob = GameState.mobileInput;
+
+            if (this.cursors.left.isDown || this.wasd.left.isDown || mob.left) moveX = -1;
+            if (this.cursors.right.isDown || this.wasd.right.isDown || mob.right) moveX = 1;
+            if (this.cursors.up.isDown || this.wasd.up.isDown || mob.up) moveY = -1;
+            if (this.cursors.down.isDown || this.wasd.down.isDown || mob.down) moveY = 1;
+
+            if (moveX !== 0 && moveY !== 0) { moveX *= 0.7071; moveY *= 0.7071; }
+
+            this.player.setVelocity(moveX * currentSpeed, moveY * currentSpeed);
+
+            if (moveX !== 0 || moveY !== 0) {
+                let angle = Math.atan2(moveY, moveX);
+                this.player.setRotation(angle + Math.PI / 2);
+                const keys = this.getCurrentRescuerKeys();
+                if (this.anims.exists(keys.anim)) {
+                    if (!this.player.anims.isPlaying || (this.player.anims.currentAnim && this.player.anims.currentAnim.key !== keys.anim)) {
+                        this.player.play(keys.anim);
+                    }
+                }
+            } else {
+                if (this.player.anims && this.player.anims.isPlaying) {
+                    this.player.anims.stop();
+                    this.player.setFrame(0);
+                }
+            }
+
+            if (this.carryingBadge && this.carrying > 0) {
+                this.carryingBadge.setPosition(this.player.x + 14, this.player.y - 18);
+            }
+
+            if (Phaser.Input.Keyboard.JustDown(this.wasd.pickupE) || Phaser.Input.Keyboard.JustDown(this.wasd.pickupSpace) || mob.action) {
+                this.tryAction();
+                mob.action = false;
+            }
+
+            this.checkAmbulanceRescue();
+            this.updateHUD();
+        };
+
+        GameScene.prototype.tryAction = function () {
+            this.tryPickupSurvivor();
+        };
+
+        GameScene.prototype.checkAmbulanceRescue = function () {
+            if (!this.hasAmbulance || !this.ambulanceActive || this.levelFinished) return;
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.ambulance.x, this.ambulance.y);
+            if (dist < 58) {
+                let didAction = false;
+                if (this.carrying > 0) {
+                    this.deliveredSurvivors += this.carrying;
+                    GameState.totalRescued += this.carrying;
+                    this.carrying = 0;
+                    this.updatePlayerSprite();
+                    didAction = true;
+                }
+                if (this.playerHealth < this.initialHealth) {
+                    this.playerHealth = this.initialHealth;
+                    didAction = true;
+                }
+                if (didAction) {
+                    SFX.playDeliver();
+                    this.cameras.main.flash(180, 80, 255, 140);
+                    this.updateHUD();
+                    if (this.deliveredSurvivors + this.lostSurvivors >= this.targetSurvivors) {
+                        this.completeLevel();
+                    }
+                }
+            }
+        };
+
+        GameScene.prototype.handleCrackStep = function (player, crack) {
+            if (this.levelFinished) return;
+            if (crack) {
+                const lastHit = crack.getData('lastHit') || 0;
+                if (this.time.now - lastHit < 1500) return;
+                crack.setData('lastHit', this.time.now);
+            }
+            this.playerHealth--;
+            this.cameras.main.shake(150, 0.02);
+            SFX.playHit();
+
+            if (this.carrying > 0) {
+                this.carrying--;
+                this.updatePlayerSprite();
+                SFX.playDrop();
+                const respawnPos = this.findNearestFreePosition(this.player.x, this.player.y);
+                this.createSurvivorSprite(respawnPos.x, respawnPos.y);
+            }
+            this.updateHUD();
+            if (this.playerHealth <= 0) this.gameOver(false, '¡El rescatista perdió toda su energía!');
+        };
+
+        GameScene.prototype.findNearestFreePosition = function (originX, originY) {
+            const step = 32;
+            for (let radius = 1; radius <= 12; radius++) {
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                        const x = Phaser.Math.Clamp(originX + dx * step, 30, 770);
+                        const y = Phaser.Math.Clamp(originY + dy * step, 70, 570);
+                        let blocked = false;
+                        this.walls.getChildren().forEach(o => { if (Phaser.Math.Distance.Between(x, y, o.x, o.y) < 30) blocked = true; });
+                        this.cracks.getChildren().forEach(o => { if (Phaser.Math.Distance.Between(x, y, o.x, o.y) < 24) blocked = true; });
+                        this.survivors.getChildren().forEach(o => { if (o.active && Phaser.Math.Distance.Between(x, y, o.x, o.y) < 28) blocked = true; });
+                        if (!blocked && Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) >= 42) return { x, y };
+                    }
+                }
+            }
+            return { x: Phaser.Math.Clamp(originX + 48, 30, 770), y: Phaser.Math.Clamp(originY + 48, 70, 570) };
+        };
+
+        // Método auxiliar para crear heridos animados
+        GameScene.prototype.createSurvivorSprite = function(x, y) {
+            const useHerido = this.textures.exists('herido_0') && this.textures.exists('herido_1');
+            if (useHerido) {
+                this._survivorCounter = (this._survivorCounter || 0) + 1;
+                const texKey = (this._survivorCounter % 2 === 0) ? 'herido_0' : 'herido_1';
+                const animKey = texKey + '_anim';
+                const s = this.survivors.create(x, y, texKey);
+                s.setDisplaySize(48, 48);
+                s.setImmovable(true);
+                s.setData('spawnX', x);
+                s.setData('spawnY', y);
+                if (this.anims.exists(animKey)) s.play(animKey);
+                return s;
+            } else {
+                const s = this.survivors.create(x, y, 'survivorTexture');
+                s.setImmovable(true);
+                s.setData('spawnX', x);
+                s.setData('spawnY', y);
+                return s;
+            }
+        };
+
+        GameScene.prototype.getCurrentRescuerKeys = function () {
+            if (this.carrying === 2 && this.textures.exists('rescatista_2')) {
+                return { texture: 'rescatista_2', anim: 'caminar_2' };
+            }
+            if (this.carrying === 1 && this.textures.exists('rescatista_1')) {
+                return { texture: 'rescatista_1', anim: 'caminar_1' };
+            }
+            const baseTex = this.textures.exists('rescatista_0') ? 'rescatista_0' : 'rescatista';
+            const baseAnim = this.anims.exists('caminar_0') ? 'caminar_0' : 'caminar';
+            return { texture: baseTex, anim: baseAnim };
+        };
+
+        GameScene.prototype.updatePlayerSprite = function () {
+            if (this.carryingBadge) {
+                this.carryingBadge.destroy();
+                this.carryingBadge = null;
+            }
+
+            const useRealRescatista = this.textures.exists('rescatista_0') || this.textures.exists('rescatista');
+            if (useRealRescatista) {
+                const keys = this.getCurrentRescuerKeys();
+                if (this.textures.exists(keys.texture)) {
+                    const isMoving = this.player.body && (this.player.body.velocity.x !== 0 || this.player.body.velocity.y !== 0);
+                    if (this.player.texture.key !== keys.texture) {
+                        this.player.setTexture(keys.texture);
+                        this.player.setDisplaySize(44, 44);
+                        if (isMoving && this.anims.exists(keys.anim)) {
+                            this.player.play(keys.anim);
+                        } else {
+                            this.player.setFrame(0);
+                        }
+                    }
+                }
+            } else {
+                if (this.carrying === 0) this.player.setTexture('player_0');
+                else if (this.carrying === 1) this.player.setTexture('player_1');
+                else if (this.carrying === 2) this.player.setTexture('player_2');
+            }
+        };
+
+        GameScene.prototype.spawnDebris = function () {
+            if (this.isPaused) return;
+
+            let x = GameState.catastrophe === 'Terremoto'
+                ? Phaser.Math.Between(this.player.x - 100, this.player.x + 100)
+                : Phaser.Math.Between(50, 750);
+            let y = GameState.catastrophe === 'Terremoto'
+                ? Phaser.Math.Between(this.player.y - 100, this.player.y + 100)
+                : Phaser.Math.Between(50, 550);
+            x = Phaser.Math.Clamp(x, 50, 750);
+            y = Phaser.Math.Clamp(y, 50, 550);
+
+            const useNew = this.textures.exists('avisoMira') && this.textures.exists('escombros');
+
+            if (useNew) {
+                // --- AVISO ANIMADO ---
+                const warning = this.add.sprite(x, y, 'avisoMira');
+                warning.setDisplaySize(64, 64);
+                if (this.anims.exists('aviso_anim')) {
+                    warning.play('aviso_anim');
+                    warning.once('animationcomplete', () => { if (warning.active) warning.destroy(); });
+                } else {
+                    this.time.delayedCall(700, () => { if (warning.active) warning.destroy(); });
+                }
+
+                // --- ESCOMBRO A LOS 700ms ---
+                this.time.delayedCall(700, () => {
+                    if (this.isPaused || this.levelFinished) return;
+
+                    const debris = this.add.sprite(x, y, 'escombros');
+                    debris.setDisplaySize(64, 64);
+
+                    // Añadir física
+                    this.physics.add.existing(debris);
+                    debris.body.setAllowGravity(false);
+                    debris.body.setEnable(false);
+                    // Círculo centrado radio 20px (offset: 32-20=12 cada lado)
+                    debris.body.setCircle(20, 12, 12);
+                    this.debrisGroup.add(debris);
+
+                    if (this.anims.exists('escombros_anim')) {
+                        debris.play('escombros_anim');
+
+                        // Activar hitbox solo en frames 2, 3, 4 (índices 1, 2, 3 en base 0)
+                        debris.on('animationupdate', (anim, frame) => {
+                            if (anim.key !== 'escombros_anim') return;
+                            // frame.index es 1-based en Phaser 3
+                            const idx = frame.index - 1;
+                            debris.body.setEnable(idx >= 1 && idx <= 3);
+                        });
+
+                        debris.once('animationcomplete', () => {
+                            if (debris.active) debris.destroy();
+                        });
+                    } else {
+                        // Fallback: triángulo viejo
+                        this.tweens.add({ targets: debris, angle: 360, duration: 1800, ease: 'Linear' });
+                        this.time.delayedCall(1800, () => { if (debris.active) debris.destroy(); });
+                    }
+                });
+
+            } else {
+                // --- FALLBACK ORIGINAL ---
+                let warning = this.add.circle(x, y, 15, 0x000000, 0.5);
+                this.time.delayedCall(700, () => {
+                    if (warning.active) warning.destroy();
+                    if (this.isPaused) return;
+                    let debris = this.debrisGroup.create(x, y, 'debrisTexture');
+                    if (debris && this.textures.exists('debrisTexture')) {
+                        debris.setDisplaySize(32, 32);
+                        this.tweens.add({ targets: debris, angle: 360, duration: 1800, ease: 'Linear' });
+                    }
+                    this.time.delayedCall(1800, () => { if (debris && debris.active) debris.destroy(); });
+                });
+            }
+        };
+
+        GameScene.prototype.tryPickupSurvivor = function () {
+            if (this.carrying >= this.maxCapacity) return;
+
+            this.survivors.getChildren().forEach((survivor) => {
+                let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, survivor.x, survivor.y);
+                if (dist < 45 && survivor.active) {
+                    survivor.destroy();
+                    this.carrying++;
+                    this.updatePlayerSprite();
+                    this.updateHUD();
+                    SFX.playPickup();
+                }
+            });
+        };
+
+        GameScene.prototype.handleDebrisHit = function (player, debris) {
+            if (this.levelFinished || this.gameOverStarted) return;
+            debris.destroy();
+            this.playerHealth = Math.max(0, this.playerHealth - 1);
+            this.cameras.main.shake(150, 0.015);
+            SFX.playHit();
+            this.updateHUD();
+            if (this.playerHealth <= 0) {
+                this.gameOver(false, '¡El rescatista sucumbió a las heridas!');
+            }
+        };
+
+        GameScene.prototype.handleSafeZoneReached = function () {
+            if (this.levelFinished || this.gameOverStarted) return;
+            if (this.carrying > 0) {
+                this.deliveredSurvivors += this.carrying;
+                GameState.totalRescued += this.carrying;
+                this.carrying = 0;
+                this.updatePlayerSprite();
+                SFX.playDeliver();
+                this.updateHUD();
+                if (this.deliveredSurvivors + this.lostSurvivors >= this.targetSurvivors) {
+                    this.completeLevel();
+                }
+            }
+        };
+
+        GameScene.prototype.updateHUD = function () {
+            this.uiText.setText(`MODO: ${GameState.catastrophe}  |  NIVEL: ${GameState.currentLevel}/${GameState.maxLevels}`);
+            if (this.clockText) this.clockText.setText(`⏱ ${String(Math.max(0, this.timeLeft)).padStart(2, '0')} s`);
+            if (this.healthText) this.healthText.setText(`${'❤️'.repeat(this.playerHealth)}${'🖤'.repeat(Math.max(0, 6 - this.playerHealth))}`);
+            if (this.rescueText) this.rescueText.setText(`RESCATADOS  ${this.deliveredSurvivors}/${this.targetSurvivors}`);
+        };
+
+                GameScene.prototype.createPauseOverlay = function () {
+            this.pauseContainer = this.add.container(0, 0).setDepth(100).setVisible(false);
+
+            // Fondo oscuro cinematográfico
+            const bg = this.add.rectangle(400, 300, 800, 600, 0x070a10, 0.88);
+
+            // Tarjeta central estilo documento/operaciones
+            const panelW = 460, panelH = 500;
+            const panelBg = this.add.rectangle(400, 300, panelW, panelH, 0x0f1522);
+            panelBg.setStrokeStyle(2, 0x243347);
+
+            // Borde superior de emergencia
+            const topBar = this.add.rectangle(400, 300 - panelH / 2 + 18, panelW, 36, 0xe74c3c);
+            const headerText = this.add.text(400, 300 - panelH / 2 + 18, 'CENTRO DE OPERACIONES — EN PAUSA', {
+                fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Subtítulo
+            const subTitle = this.add.text(400, 145, 'OPERACIÓN RUTA DE ESCAPE', {
+                fontSize: '11px', color: '#3498db', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Resumen de misión actual
+            const infoBox = this.add.rectangle(400, 185, panelW - 40, 42, 0x090d14);
+            infoBox.setStrokeStyle(1, 0x223247);
+            const infoText = this.add.text(400, 185, `MODO: ${(GameState.catastrophe || '').toUpperCase()}  |  NIVEL: ${GameState.currentLevel}/8`, {
+                fontSize: '13px', color: '#f1c40f', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+
+            // Función helper para botones tácticos con hover
+            const createTacticalBtn = (y, label, baseColor, hoverColor, onClick) => {
+                const btnW = panelW - 60, btnH = 42;
+                const btnBg = this.add.rectangle(400, y, btnW, btnH, baseColor).setInteractive({ useHandCursor: true });
+                btnBg.setStrokeStyle(1, 0x3d566e);
+                const btnTxt = this.add.text(400, y, label, {
+                    fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 1
+                }).setOrigin(0.5);
+
+                btnBg.on('pointerover', () => {
+                    btnBg.setFillStyle(hoverColor);
+                    btnBg.setScale(1.02);
+                    btnTxt.setScale(1.02);
+                });
+                btnBg.on('pointerout', () => {
+                    btnBg.setFillStyle(baseColor);
+                    btnBg.setScale(1);
+                    btnTxt.setScale(1);
+                });
+                btnBg.on('pointerdown', onClick);
+                return { bg: btnBg, txt: btnTxt };
+            };
+
+            // 1. Reanudar
+            const resumeBtn = createTacticalBtn(245, 'REANUDAR OPERACIÓN  ►', 0x27ae60, 0x2ecc71, () => this.togglePauseMenu());
+
+            // 2. Botón Protocolos de Campo (abre modal)
+            const protoBtn = createTacticalBtn(295, '📖 PROTOCOLO Y MANDOS', 0x1f2d3d, 0x2c3e50, () => {
+                this.pauseModalContainer.setVisible(true);
+            });
+
+            // 3. Audio
+            const soundBtn = createTacticalBtn(345, SFX.audioEnabled ? 'SONIDO: ACTIVADO  🔊' : 'SONIDO: DESACTIVADO  🔇', 0x2980b9, 0x3498db, () => {
+                SFX.setAudioEnabled(!SFX.audioEnabled);
+                soundBtn.txt.setText(SFX.audioEnabled ? 'SONIDO: ACTIVADO  🔊' : 'SONIDO: DESACTIVADO  🔇');
+            });
+            this.soundBtnLabel = soundBtn.txt;
+
+            // 4. Reiniciar nivel
+            const restartBtn = createTacticalBtn(395, 'REINICIAR SECTOR  ↺', 0xd35400, 0xe67e22, () => {
+                this.isPaused = false;
+                this.physics.resume();
+                this.scene.restart();
+            });
+
+            // 5. Volver al menú
+            const menuBtn = createTacticalBtn(445, 'VOLVER AL CUARTEL  ◄', 0xc0392b, 0xe74c3c, () => {
+                this.isPaused = false;
+                SFX.playMenuMusic();
+                this.physics.resume();
+                this.scene.start('CatastropheSelectScene');
+            });
+
+            this.pauseContainer.add([
+                bg, panelBg, topBar, headerText, subTitle, infoBox, infoText,
+                resumeBtn.bg, resumeBtn.txt,
+                protoBtn.bg, protoBtn.txt,
+                soundBtn.bg, soundBtn.txt,
+                restartBtn.bg, restartBtn.txt,
+                menuBtn.bg, menuBtn.txt
+            ]);
+
+            // -------------------------------------------------------------
+            //  SUB-MODAL: PROTOCOLO TÁCTICO Y COMANDOS (DENTRO DE PAUSA)
+            // -------------------------------------------------------------
+            this.pauseModalContainer = this.add.container(0, 0).setDepth(110).setVisible(false);
+
+            const modalBg = this.add.rectangle(400, 300, 800, 600, 0x05070c, 0.94);
+            const mCardW = 600, mCardH = 460;
+            const mCard = this.add.rectangle(400, 300, mCardW, mCardH, 0x0e1420);
+            mCard.setStrokeStyle(2, 0x3498db);
+
+            const mTop = this.add.rectangle(400, 300 - mCardH/2 + 20, mCardW, 40, 0x1a2638);
+            const mTitle = this.add.text(400, 300 - mCardH/2 + 20, 'MANUAL OFICIAL DE RESCATE EN CAMPO', {
+                fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // Contenido en 3 secciones tácticas
+            // 1. Zonas Seguras
+            const box1 = this.add.rectangle(400, 175, mCardW - 50, 70, 0x070a10);
+            box1.setStrokeStyle(1, 0x27ae60, 0.7);
+            const t1 = this.add.text(400, 160, '🟢 PUESTOS DE EVACUACIÓN Y ZONAS SEGURAS', {
+                fontSize: '12px', color: '#2ecc71', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const t1b = this.add.text(400, 185, '• Niveles 1 al 3: 1 puesto seguro.\n• Niveles 4 al 8: ¡2 PUESTOS SIMULTÁNEOS! (Centro y Extremo Este).', {
+                fontSize: '11px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // 2. Unidad Médica Ambulancia
+            const box2 = this.add.rectangle(400, 260, mCardW - 50, 70, 0x070a10);
+            box2.setStrokeStyle(1, 0xe74c3c, 0.7);
+            const t2 = this.add.text(400, 245, '🚑 UNIDAD MÉDICA MÓVIL (AMBULANCIA)', {
+                fontSize: '12px', color: '#e74c3c', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const t2b = this.add.text(400, 270, '• A partir del NIVEL 4 ingresa con aviso de balizas rojas.\n• Tocarla recupera energía y vida del rescatista al instante.', {
+                fontSize: '11px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // 3. Controles y Capacidad
+            const box3 = this.add.rectangle(400, 345, mCardW - 50, 70, 0x070a10);
+            box3.setStrokeStyle(1, 0xf1c40f, 0.7);
+            const t3 = this.add.text(400, 330, '🎒 CONTROLES Y CAPACIDAD DE CARGA', {
+                fontSize: '12px', color: '#f1c40f', fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const t3b = this.add.text(400, 355, '• Capacidad máxima: Hasta 2 personas al mismo tiempo.\n• [WASD / Flechas] Desplazamiento  |  [E / Espacio / Botón Móvil] Cargar y Dejar.', {
+                fontSize: '11px', color: '#ecf0f1', align: 'center', lineSpacing: 3
+            }).setOrigin(0.5);
+
+            // Botón Entendido / Cerrar modal
+            const closeBtnBg = this.add.rectangle(400, 420, 200, 40, 0x34495e).setInteractive({ useHandCursor: true });
+            closeBtnBg.setStrokeStyle(1, 0x3498db);
+            const closeBtnTxt = this.add.text(400, 420, 'ENTENDIDO  ✓', {
+                fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 1
+            }).setOrigin(0.5);
+
+            closeBtnBg.on('pointerover', () => { closeBtnBg.setFillStyle(0x2980b9); closeBtnBg.setScale(1.02); });
+            closeBtnBg.on('pointerout', () => { closeBtnBg.setFillStyle(0x34495e); closeBtnBg.setScale(1); });
+            closeBtnBg.on('pointerdown', () => { this.pauseModalContainer.setVisible(false); });
+
+            this.pauseModalContainer.add([
+                modalBg, mCard, mTop, mTitle,
+                box1, t1, t1b,
+                box2, t2, t2b,
+                box3, t3, t3b,
+                closeBtnBg, closeBtnTxt
+            ]);
+        };
+
+        GameScene.prototype.togglePauseMenu = function () {
+            this.isPaused = !this.isPaused;
+            if (this.isPaused) {
+                this.physics.pause();
+                SFX.pauseBGM();
+                this.pauseContainer.setVisible(true);
+            } else {
+                this.physics.resume();
+                SFX.resumeBGM();
+                this.pauseContainer.setVisible(false);
+            }
+        };
+
+        GameScene.prototype.calculateStars = function () {
+            let stars = 1;
+            if (this.timeLeft >= this.initialTime * 0.4) stars++;
+            if (this.playerHealth === this.initialHealth) stars++;
+            stars = Math.max(1, stars - this.lostSurvivors);
+            return stars;
+        };
+
+        GameScene.prototype.completeLevel = function () {
+            if (this.levelFinished) return;
+            this.levelFinished = true;
+
+            // Detener timers de forma segura
+            if (this.debrisTimer) { try { this.debrisTimer.remove(); } catch(e) {} }
+            if (this.levelTimer)  { try { this.levelTimer.remove();  } catch(e) {} }
+            if (this.ambulanceTimer) { try { this.ambulanceTimer.remove(); } catch(e) {} }
+
+            const stars = this.calculateStars();
+            GameState.saveProgress(GameState.catastrophe, GameState.currentLevel, stars);
+
+            if (GameState.currentLevel < GameState.maxLevels) {
+                GameState.currentLevel++;
+                this.scene.restart();
+            } else {
+                // Nivel 8 completado — mensaje especial según catástrofe y directo a gameOver
+                const WIN_MESSAGES = {
+                    Terremoto:  '¡Felicitaciones! Gracias a tu valentía, muchas familias volvieron a reunirse tras el terremoto. Sos un verdadero héroe.',
+                    Inundacion: '¡Lo lograste! Rescataste a todas las personas atrapadas por la inundación. ¡Las familias están completas gracias a vos!',
+                    Erupcion:   '¡Increíble! Lograste sacar a todos sanos y salvos antes de que la lava lo cubriera todo. ¡Sos una leyenda del rescate!'
+                };
+                const msg = WIN_MESSAGES[GameState.catastrophe] || '¡Completaste los 8 niveles!';
+                this.gameOver(true, msg);
+            }
+        };
+
+        GameScene.prototype.gameOver = function (isWin, message) {
+            if (this.gameOverStarted) return;
+            this.gameOverStarted = true;
+            this.levelFinished = true;
+
+            // Detener timers de forma segura
+            if (this.debrisTimer) { try { this.debrisTimer.remove(); } catch(e) {} }
+            if (this.levelTimer)  { try { this.levelTimer.remove();  } catch(e) {} }
+            if (this.ambulanceTimer) { try { this.ambulanceTimer.remove(); } catch(e) {} }
+
+            try { this.physics.pause(); } catch(e) {}
+            if (isWin) {
+                SFX.playVictory();
+            } else {
+                SFX.playDefeat();
+            }
+
+            let recordData = null;
+            if (isWin && GameState.currentLevel === GameState.maxLevels) {
+                try { recordData = saveAndCompareRecord(); } catch(e) {}
+                try { saveHeroRecord(GameState.playerName, GameState.totalRunSeconds); } catch(e) {}
+            }
+            this.scene.start('GameOverScene', { win: isWin, msg: message, recordData });
+        };
+
+        function GameOverScene() { Phaser.Scene.call(this, { key: 'GameOverScene' }); }
+        GameOverScene.prototype = Object.create(Phaser.Scene.prototype);
+
+        GameOverScene.prototype.init = function (data) { this.win = data.win; this.msg = data.msg; this.recordData = data.recordData || null; };
+
+        GameOverScene.prototype.create = function () {
+            const isNivel8Win = this.win && GameState.currentLevel === GameState.maxLevels;
+
+            // -------------------------------------------------------------
+            //  FONDO DE PANTALLA
+            // -------------------------------------------------------------
+            if (isNivel8Win && this.textures.exists('victoria_final')) {
+                // Imagen ilustrada de familias reunidas
+                const bgImg = this.add.image(400, 300, 'victoria_final');
+                bgImg.setDisplaySize(800, 600);
+
+                // Capa semitransparente oscura para asegurar perfecta legibilidad
+                const darkCover = this.add.graphics();
+                darkCover.fillStyle(0x060910, 0.75);
+                darkCover.fillRect(0, 0, 800, 600);
+            } else {
+                // Fondo oscuro cinemático
+                this.add.rectangle(400, 300, 800, 600, 0x080c14).setOrigin(0.5);
+            }
+
+            // Borde superior cinemático
+            const topBar = this.add.graphics();
+            topBar.fillStyle(0x0e1420, 0.9);
+            topBar.fillRect(0, 0, 800, 60);
+            topBar.lineStyle(2, this.win ? 0x2ecc71 : 0xe74c3c, 0.8);
+            topBar.strokeLineShape(new Phaser.Geom.Line(0, 60, 800, 60));
+
+            // Título principal en la barra superior
+            const titleColor = this.win ? '#2ecc71' : '#e74c3c';
+            const titleText  = isNivel8Win
+                ? '⭐ OPERACIÓN RESCATE FINAL: ¡VICTORIA TOTAL! ⭐'
+                : (this.win ? '🏆 INFORME DE MISIÓN: SECTOR ASEGURADO' : '⚠️ ALERTA: MISIÓN INTERRUMPIDA');
+
+            this.add.text(400, 30, titleText, {
+                fontSize: isNivel8Win ? '18px' : '17px',
+                color: titleColor,
+                fontStyle: 'bold',
+                letterSpacing: 2
+            }).setOrigin(0.5);
+
+            // -------------------------------------------------------------
+            //  TARJETA CENTRAL DE INFORME TÁCTICO
+            // -------------------------------------------------------------
+            const cardW = 680, cardH = 370;
+            const cardY = 265;
+            const cardBg = this.add.rectangle(400, cardY, cardW, cardH, 0x0e1420, 0.88);
+            cardBg.setStrokeStyle(2, this.win ? (isNivel8Win ? 0xf1c40f : 0x27ae60) : 0xc0392b);
+
+            // Mensaje principal destacado
+            this.add.text(400, cardY - 140, this.msg, {
+                fontSize: '16px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                align: 'center',
+                wordWrap: { width: 620 }
+            }).setOrigin(0.5);
+
+            // Carnet y rescatista
+            const pName = (GameState.playerName || 'RESCATISTA').toUpperCase();
+            this.add.text(400, cardY - 85, `BRIGADA DE RESCATE: ${pName}  —  CATEGORÍA: RESCATISTA`, {
+                fontSize: '12px',
+                color: '#3498db',
+                fontStyle: 'bold',
+                letterSpacing: 1.5
+            }).setOrigin(0.5);
+
+            // Cuadro de estadísticas
+            const statsBox = this.add.rectangle(400, cardY - 25, cardW - 60, 60, 0x070a10, 0.8);
+            statsBox.setStrokeStyle(1, 0x223247);
+
+            this.add.text(250, cardY - 25, `SOBREVIVIENTES RESCATADOS\n${GameState.totalRescued} PERSONAS`, {
+                fontSize: '13px',
+                color: '#f1c40f',
+                fontStyle: 'bold',
+                align: 'center',
+                lineSpacing: 4
+            }).setOrigin(0.5);
+
+            this.add.text(550, cardY - 25, `TIEMPO DE OPERACIÓN\n${formatTime(GameState.totalRunSeconds)}`, {
+                fontSize: '13px',
+                color: '#ecf0f1',
+                fontStyle: 'bold',
+                align: 'center',
+                lineSpacing: 4
+            }).setOrigin(0.5);
+
+            if (this.win) {
+                // Frase emotiva según catástrofe
+                const frases = {
+                    Terremoto:  '🤝 Las familias que reencontraste nunca olvidarán tu valentía.',
+                    Inundacion: '💧 Tu coraje salvó vidas que el agua amenazaba con llevarse.',
+                    Erupcion:   '🌋 Desafiaste la lava ardiente y venciste al volcán. ¡Leyenda del rescate!'
+                };
+                const frase = frases[GameState.catastrophe] || '¡Sos un verdadero héroe del rescate!';
+                this.add.text(400, cardY + 45, frase, {
+                    fontSize: '15px', color: '#b9d7ff',
+                    fontStyle: 'italic', align: 'center', wordWrap: { width: 620 }
+                }).setOrigin(0.5);
+
+                // Récord
+                if (this.recordData && this.recordData.current && this.recordData.current.name) {
+                    const record = this.recordData.current;
+                    const old    = this.recordData.previous;
+                    const esNuevo = this.recordData.isBetter;
+                    const linea = (old && old.name)
+                        ? `🏅 Récord de ${record.name}: ${record.rescued} rescatados en ${formatTime(record.seconds)}${esNuevo ? '  ⭐ ¡NUEVO RÉCORD!' : ''}`
+                        : `🏅 Primer récord oficial: ${record.rescued} rescatados en ${formatTime(record.seconds)}`;
+                    this.add.text(400, cardY + 95, linea, {
+                        fontSize: '13px', color: '#f8d66d', fontStyle: 'bold',
+                        align: 'center', wordWrap: { width: 620 }
+                    }).setOrigin(0.5);
+                }
+
+                // Próximo desafío
+                if (!isNivel8Win || GameState.catastrophe !== 'Erupcion') {
+                    const nextMode = GameState.catastrophe === 'Terremoto'
+                        ? '¿Preparado para intervenir en las Inundaciones?'
+                        : (GameState.catastrophe === 'Inundacion'
+                            ? '¿Listo para el desafío de la Erupción Volcánica?'
+                            : '🎉 ¡Completaste todos los escenarios de rescate!');
+                    this.add.text(400, cardY + 135, nextMode, {
+                        fontSize: '13px', color: '#ffffff',
+                        align: 'center', wordWrap: { width: 620 }
+                    }).setOrigin(0.5);
+                }
+            }
+
+            // -------------------------------------------------------------
+            //  BOTONES DE ACCIÓN (ESTÉTICA DE BRIGADA)
+            // -------------------------------------------------------------
+            const btnY = 510;
+
+            const createActionBtn = (x, w, label, baseColor, hoverColor, onClick) => {
+                const btnBg = this.add.rectangle(x, btnY, w, 48, baseColor).setInteractive({ useHandCursor: true });
+                btnBg.setStrokeStyle(1, 0x3d566e);
+                const btnTxt = this.add.text(x, btnY, label, {
+                    fontSize: '13px', color: '#ffffff', fontStyle: 'bold', letterSpacing: 1
+                }).setOrigin(0.5);
+
+                btnBg.on('pointerover', () => {
+                    btnBg.setFillStyle(hoverColor);
+                    btnBg.setScale(1.02);
+                    btnTxt.setScale(1.02);
+                });
+                btnBg.on('pointerout', () => {
+                    btnBg.setFillStyle(baseColor);
+                    btnBg.setScale(1);
+                    btnTxt.setScale(1);
+                });
+                btnBg.on('pointerdown', onClick);
+                return { bg: btnBg, txt: btnTxt };
+            };
+
+            if (this.win) {
+                // Jugar de nuevo
+                createActionBtn(270, 240, 'REPETIR MISIÓN  ↺', 0x27ae60, 0x2ecc71, () => {
+                    GameState.totalRescued = 0;
+                    GameState.totalRunSeconds = 0;
+                    GameState.currentLevel = 1;
+                    SFX.playMenuMusic();
+                    this.scene.start('LevelSelectScene');
+                });
+
+                // Menú de Modos
+                createActionBtn(530, 240, 'CENTRO DE OPERACIONES  ►', 0x2980b9, 0x3498db, () => {
+                    GameState.totalRescued = 0;
+                    GameState.totalRunSeconds = 0;
+                    GameState.currentLevel = 1;
+                    SFX.playMenuMusic();
+                    this.scene.start('CatastropheSelectScene');
+                });
+            } else {
+                // Derrota: Reintentar nivel
+                createActionBtn(270, 240, 'REINTENTAR SECTOR  ↺', 0xd35400, 0xe67e22, () => {
+                    SFX.stopJingles();
+                    this.scene.start('GameScene');
+                });
+
+                // Menú de Modos
+                createActionBtn(530, 240, 'VOLVER AL CUARTEL  ◄', 0xc0392b, 0xe74c3c, () => {
+                    GameState.totalRescued = 0;
+                    GameState.totalRunSeconds = 0;
+                    GameState.currentLevel = 1;
+                    SFX.playMenuMusic();
+                    this.scene.start('CatastropheSelectScene');
+                });
+            }
+
+            this.cameras.main.fadeIn(300, 0, 0, 0);
+        };
+    </script>
+</body>
+</html>
