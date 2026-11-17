@@ -509,6 +509,102 @@
                 pointer-events: auto;
             }
         }
+
+        /* --- AVISO DE GIRAR TELÉFONO A HORIZONTAL (SOLO MÓVIL) --- */
+        #rotate-device-overlay {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(10, 14, 22, 0.96);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100001;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        @media (orientation: landscape) {
+            #rotate-device-overlay {
+                display: none !important;
+            }
+        }
+
+        .rotate-device-modal {
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rotate-phone-icon-anim {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .phone-shape {
+            width: 34px;
+            height: 58px;
+            border: 3px solid #3498db;
+            border-radius: 8px;
+            position: absolute;
+            animation: rotatePhone 2.2s infinite ease-in-out;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
+        }
+
+        @keyframes rotatePhone {
+            0%, 20% { transform: rotate(0deg); }
+            50%, 70% { transform: rotate(90deg); }
+            90%, 100% { transform: rotate(90deg); }
+        }
+
+        .rotate-arrow {
+            font-size: 26px;
+            position: absolute;
+        }
+
+        .rotate-device-modal h3 {
+            margin: 0;
+            font-size: 20px;
+            color: #f39c12;
+            letter-spacing: 1.5px;
+            font-weight: 900;
+        }
+
+        .rotate-device-modal p {
+            margin: 0;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .btn-skip-rotate {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #94a3b8;
+            font-size: 11px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+            touch-action: manipulation;
+        }
+        .btn-skip-rotate:active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -581,14 +677,29 @@
 
                 <div class="credencial-input-box">
                     <label for="player-name">NOMBRE DEL RESCATISTA</label>
-                    <input class="name-input" id="player-name" type="text" value="RESCATISTA" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" placeholder="Ingresá tu nombre" enterkeyhint="done" />
+                    <input class="name-input" id="player-name" type="text" value="AAA" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="AAA" enterkeyhint="done" />
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-                        <div class="name-hint" id="name-hint" style="color: #2ecc71; margin: 0; text-align: left;">¡Listo para comenzar!</div>
-                        <button type="button" id="btn-change-name" style="background: rgba(52, 152, 219, 0.2); border: 1px solid #3498db; color: #3498db; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✍️ Cambiar</button>
+                        <div class="name-hint" id="name-hint" style="color: #f1c40f; margin: 0; text-align: left;">Ingresá tus letras o nombre (3 a 12 caracteres)</div>
+                        <button type="button" id="btn-change-name" style="background: rgba(52, 152, 219, 0.2); border: 1px solid #3498db; color: #3498db; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✍️ Escribir</button>
                     </div>
                 </div>
 
                 <button class="confirm-btn-html" id="btn-start-game" type="button">CONFIRMAR IDENTIDAD  ►</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AVISO DE GIRAR TELÉFONO A HORIZONTAL (SOLO MÓVIL) -->
+    <div id="rotate-device-overlay" style="display: none;">
+        <div class="rotate-device-modal">
+            <div class="rotate-phone-icon-anim">
+                <div class="phone-shape"></div>
+                <div class="rotate-arrow">🔄</div>
+            </div>
+            <h3>GIRÁ TU TELÉFONO</h3>
+            <p>Poné el celular en <strong>horizontal</strong> para jugar en pantalla completa con mejor visión y controles cómodos.</p>
+            <div class="rotate-actions">
+                <button type="button" id="btn-skip-rotate" class="btn-skip-rotate">Continuar en vertical</button>
             </div>
         </div>
     </div>
@@ -1715,7 +1826,7 @@
         // Asegurar que al tocar se abra el teclado y se seleccione el texto
         nameInput.addEventListener('click', () => {
             nameInput.focus();
-            if (nameInput.value === 'RESCATISTA') {
+            if (nameInput.value === 'AAA') {
                 try { nameInput.select(); } catch(err) {}
             }
         });
@@ -1731,20 +1842,30 @@
 
         // Botón alternativo de diálogo nativo (100% infalible en cualquier navegador móvil)
         if (changeNameBtn) {
-            changeNameBtn.onclick = function(e) {
-                e.preventDefault();
-                const custom = window.prompt('Ingresá tu nombre de rescatista (3 a 12 caracteres):', nameInput.value || 'RESCATISTA');
+            const openPrompt = (e) => {
+                if (e) e.preventDefault();
+                const custom = window.prompt('Ingresá tus iniciales o nombre (3 a 12 caracteres):', nameInput.value || 'AAA');
                 if (custom !== null && custom.trim().length >= 3) {
-                    nameInput.value = custom.trim().slice(0, 12);
+                    nameInput.value = custom.trim().slice(0, 12).toUpperCase();
                     validateAndUpdateUI();
                 }
             };
+            changeNameBtn.addEventListener('click', openPrompt);
+            changeNameBtn.addEventListener('pointerdown', openPrompt);
         }
 
-        startButton.onclick = function() {
+        let isStartingGame = false;
+        function doConfirmIdentity(e) {
+            if (e) {
+                if (e.cancelable && e.type !== 'click') e.preventDefault();
+                e.stopPropagation();
+            }
+            if (isStartingGame) return;
+            isStartingGame = true;
+
             let clean = nameInput.value.trim();
             if (!validPlayerName(clean)) {
-                clean = 'RESCATISTA';
+                clean = 'AAA';
                 nameInput.value = clean;
             }
             GameState.playerName = clean;
@@ -1752,14 +1873,65 @@
             try {
                 SFX.init();
                 SFX.playMenuMusic();
-            } catch(e) {}
-            const overlay = document.getElementById('start-overlay');
-            if (overlay) overlay.remove();
-            if (game.scene.keys['BootScene']) {
-                game.scene.stop('BootScene');
-                game.scene.start('IntroMissionScene');
+            } catch(err) {}
+
+            const startOverlay = document.getElementById('start-overlay');
+            if (startOverlay) startOverlay.remove();
+
+            // Verificar si estamos en dispositivo móvil y en orientación vertical
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 850);
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const rotateOverlay = document.getElementById('rotate-device-overlay');
+
+            const launchGame = () => {
+                if (rotateOverlay) rotateOverlay.style.display = 'none';
+                if (game.scene.keys['BootScene']) {
+                    game.scene.stop('BootScene');
+                    game.scene.start('IntroMissionScene');
+                }
+            };
+
+            if (isMobile && isPortrait && rotateOverlay) {
+                rotateOverlay.style.display = 'flex';
+
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(() => {});
+                    }
+                } catch(err) {}
+
+                const handleOrientation = () => {
+                    if (window.innerWidth > window.innerHeight) {
+                        window.removeEventListener('resize', handleOrientation);
+                        window.removeEventListener('orientationchange', handleOrientation);
+                        launchGame();
+                    }
+                };
+
+                window.addEventListener('resize', handleOrientation);
+                window.addEventListener('orientationchange', handleOrientation);
+
+                const skipBtn = document.getElementById('btn-skip-rotate');
+                if (skipBtn) {
+                    const skipAction = (ev) => {
+                        if (ev && ev.cancelable) ev.preventDefault();
+                        window.removeEventListener('resize', handleOrientation);
+                        window.removeEventListener('orientationchange', handleOrientation);
+                        launchGame();
+                    };
+                    skipBtn.addEventListener('click', skipAction);
+                    skipBtn.addEventListener('pointerdown', skipAction);
+                    skipBtn.addEventListener('touchstart', skipAction, { passive: false });
+                }
+            } else {
+                launchGame();
             }
-        };
+        }
+
+        // Activación inmediata táctil en el botón (funciona al primer toque con el dedo)
+        startButton.addEventListener('pointerdown', doConfirmIdentity);
+        startButton.addEventListener('touchstart', doConfirmIdentity, { passive: false });
+        startButton.addEventListener('click', doConfirmIdentity);
 
         function BootScene() { Phaser.Scene.call(this, { key: 'BootScene' }); }
         BootScene.prototype = Object.create(Phaser.Scene.prototype);
