@@ -605,9 +605,163 @@
             background: rgba(255, 255, 255, 0.1);
             color: #ffffff;
         }
+
+        /* --- BOTÓN FLOTANTE Y MODAL DE PANTALLA COMPLETA --- */
+        .btn-fullscreen-toggle {
+            position: fixed;
+            top: 10px;
+            right: 14px;
+            z-index: 10000;
+            height: 34px;
+            padding: 0 12px;
+            border-radius: 6px;
+            background: rgba(18, 26, 38, 0.88);
+            border: 1.5px solid rgba(52, 152, 219, 0.5);
+            color: #ecf0f1;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+        .btn-fullscreen-toggle:hover {
+            background: #243347;
+            border-color: #3498db;
+            color: #ffffff;
+        }
+        .btn-fullscreen-toggle:active {
+            transform: scale(0.96);
+        }
+
+        @media (max-width: 600px) {
+            .btn-fullscreen-toggle {
+                padding: 0;
+                width: 34px;
+                height: 34px;
+                justify-content: center;
+            }
+            .btn-fullscreen-toggle .fs-text-btn {
+                display: none;
+            }
+        }
+
+        #fullscreen-prompt-modal {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(10, 14, 22, 0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100002;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .fullscreen-prompt-box {
+            background: linear-gradient(145deg, #182230, #0f1622);
+            border: 2px solid #2e4460;
+            border-top: 4px solid #3498db;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 380px;
+            padding: 22px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(52, 152, 219, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fs-icon {
+            font-size: 38px;
+            color: #3498db;
+            line-height: 1;
+        }
+
+        .fullscreen-prompt-box h3 {
+            margin: 0;
+            font-size: 19px;
+            color: #ffffff;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+        }
+
+        .fullscreen-prompt-box p {
+            margin: 0;
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .fs-buttons {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .btn-fs-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+            border: 1px solid #5dade2;
+            color: white;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(41, 128, 185, 0.4);
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+        .btn-fs-primary:hover {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            transform: translateY(-1px);
+        }
+        .btn-fs-primary:active {
+            transform: translateY(1px);
+        }
+
+        .btn-fs-secondary {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #cbd5e1;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+        .btn-fs-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
+
+    <!-- BOTÓN PERMANENTE DE PANTALLA COMPLETA (PC Y CELULAR) -->
+    <button id="btn-fullscreen-toggle" class="btn-fullscreen-toggle" type="button" title="Pantalla Completa">
+        <span class="fs-icon-btn">⛶</span>
+        <span class="fs-text-btn">PANTALLA COMPLETA</span>
+    </button>
 
     <header id="main-header">
         <h1>Ruta de rescate</h1>
@@ -700,6 +854,19 @@
             <p>Poné el celular en <strong>horizontal</strong> para jugar en pantalla completa con mejor visión y controles cómodos.</p>
             <div class="rotate-actions">
                 <button type="button" id="btn-skip-rotate" class="btn-skip-rotate">Continuar en vertical</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ELECCIÓN PANTALLA COMPLETA AL INICIAR NIVEL -->
+    <div id="fullscreen-prompt-modal" style="display: none;">
+        <div class="fullscreen-prompt-box">
+            <div class="fs-icon">⛶</div>
+            <h3 id="fs-prompt-title">DESPLIEGUE: NIVEL 1</h3>
+            <p>¿Querés jugar este sector en <strong>Pantalla Completa</strong> para ver todo más grande y sin barras?</p>
+            <div class="fs-buttons">
+                <button type="button" id="btn-play-fullscreen" class="btn-fs-primary">⛶ PANTALLA COMPLETA</button>
+                <button type="button" id="btn-play-normal" class="btn-fs-secondary">▶ JUGAR NORMAL</button>
             </div>
         </div>
     </div>
@@ -1933,6 +2100,105 @@
         startButton.addEventListener('touchstart', doConfirmIdentity, { passive: false });
         startButton.addEventListener('click', doConfirmIdentity);
 
+        // --- GESTIÓN UNIVERSAL DE PANTALLA COMPLETA (PC Y MÓVIL) ---
+        function toggleFullscreen() {
+            const doc = document;
+            const docEl = document.documentElement;
+            const isFs = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+            if (!isFs) {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(() => {});
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                } else if (docEl.mozRequestFullScreen) {
+                    docEl.mozRequestFullScreen();
+                } else if (docEl.msRequestFullscreen) {
+                    docEl.msRequestFullscreen();
+                }
+            } else {
+                if (doc.exitFullscreen) {
+                    doc.exitFullscreen().catch(() => {});
+                } else if (doc.webkitExitFullscreen) {
+                    doc.webkitExitFullscreen();
+                } else if (doc.mozCancelFullScreen) {
+                    doc.mozCancelFullScreen();
+                } else if (doc.msExitFullscreen) {
+                    doc.msExitFullscreen();
+                }
+            }
+        }
+
+        function updateFullscreenButtonState() {
+            const btn = document.getElementById('btn-fullscreen-toggle');
+            if (!btn) return;
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            const icon = btn.querySelector('.fs-icon-btn');
+            const text = btn.querySelector('.fs-text-btn');
+            if (icon) icon.textContent = isFs ? '🗗' : '⛶';
+            if (text) text.textContent = isFs ? 'VENTANA' : 'PANTALLA COMPLETA';
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            updateFullscreenButtonState();
+            if (window.game && window.game.scale) window.game.scale.refresh();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            updateFullscreenButtonState();
+            if (window.game && window.game.scale) window.game.scale.refresh();
+        });
+
+        const fsToggleBtn = document.getElementById('btn-fullscreen-toggle');
+        if (fsToggleBtn) {
+            const handleFsToggle = (e) => {
+                if (e && e.cancelable && e.type !== 'click') e.preventDefault();
+                toggleFullscreen();
+            };
+            fsToggleBtn.addEventListener('pointerdown', handleFsToggle);
+            fsToggleBtn.addEventListener('click', handleFsToggle);
+        }
+
+        window.showFullscreenLevelPrompt = function(levelNum, onStart) {
+            const modal = document.getElementById('fullscreen-prompt-modal');
+            const title = document.getElementById('fs-prompt-title');
+            const btnFs = document.getElementById('btn-play-fullscreen');
+            const btnNormal = document.getElementById('btn-play-normal');
+
+            if (!modal) {
+                onStart();
+                return;
+            }
+
+            if (title) title.textContent = `DESPLIEGUE: NIVEL ${levelNum}`;
+            modal.style.display = 'flex';
+
+            const startWithFullscreen = (e) => {
+                if (e && e.cancelable && e.type !== 'click') e.preventDefault();
+                cleanup();
+                toggleFullscreen();
+                setTimeout(() => onStart(), 60);
+            };
+
+            const startNormal = (e) => {
+                if (e && e.cancelable && e.type !== 'click') e.preventDefault();
+                cleanup();
+                onStart();
+            };
+
+            const cleanup = () => {
+                modal.style.display = 'none';
+                btnFs.removeEventListener('pointerdown', startWithFullscreen);
+                btnFs.removeEventListener('click', startWithFullscreen);
+                btnNormal.removeEventListener('pointerdown', startNormal);
+                btnNormal.removeEventListener('click', startNormal);
+            };
+
+            btnFs.addEventListener('pointerdown', startWithFullscreen);
+            btnFs.addEventListener('click', startWithFullscreen);
+            btnNormal.addEventListener('pointerdown', startNormal);
+            btnNormal.addEventListener('click', startNormal);
+        };
+
         function BootScene() { Phaser.Scene.call(this, { key: 'BootScene' }); }
         BootScene.prototype = Object.create(Phaser.Scene.prototype);
 
@@ -2815,7 +3081,14 @@
                     btn.on('pointerdown', () => {
                         GameState.currentLevel = i;
                         GameState.totalRescued = 0;
-                        this.scene.start('GameScene');
+                        const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                        if (isFs || !window.showFullscreenLevelPrompt) {
+                            this.scene.start('GameScene');
+                        } else {
+                            window.showFullscreenLevelPrompt(i, () => {
+                                this.scene.start('GameScene');
+                            });
+                        }
                     });
                 } else {
                     this.add.text(x, y + 14, '🔒 BLOQUEADO', {
