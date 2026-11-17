@@ -15,9 +15,6 @@
             background-color: #0d0d15; color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
         }
         body {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -90,6 +87,8 @@
             box-sizing: border-box;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
         }
 
         .start-overlay-inner {
@@ -222,17 +221,18 @@
             border-radius: 6px;
             background: #080b10;
             color: #ffffff;
-            font-size: 17px;
+            font-size: 18px;
             font-weight: bold;
             letter-spacing: 1px;
             text-align: center;
             outline: none;
             box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
-            user-select: text;
-            -webkit-user-select: text;
-            touch-action: manipulation;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            touch-action: auto !important;
             -webkit-appearance: none;
+            cursor: text;
         }
 
         .name-input:focus {
@@ -581,11 +581,14 @@
 
                 <div class="credencial-input-box">
                     <label for="player-name">NOMBRE DEL RESCATISTA</label>
-                    <input class="name-input" id="player-name" type="text" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" placeholder="Ingresá tu nombre" enterkeyhint="done" />
-                    <div class="name-hint" id="name-hint">Solo letras y números (3 a 12 caracteres).</div>
+                    <input class="name-input" id="player-name" type="text" value="RESCATISTA" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" placeholder="Ingresá tu nombre" enterkeyhint="done" />
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <div class="name-hint" id="name-hint" style="color: #2ecc71; margin: 0; text-align: left;">¡Listo para comenzar!</div>
+                        <button type="button" id="btn-change-name" style="background: rgba(52, 152, 219, 0.2); border: 1px solid #3498db; color: #3498db; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">✍️ Cambiar</button>
+                    </div>
                 </div>
 
-                <button class="confirm-btn-html" id="btn-start-game" type="button" disabled>CONFIRMAR IDENTIDAD</button>
+                <button class="confirm-btn-html" id="btn-start-game" type="button">CONFIRMAR IDENTIDAD  ►</button>
             </div>
         </div>
     </div>
@@ -1681,12 +1684,14 @@
         window.addEventListener('pointerdown', unlockMobileAudio, { passive: true });
         window.addEventListener('click', unlockMobileAudio, { passive: true });
 
-        // Nombre obligatorio antes de comenzar (3 a 12 caracteres, admite letras, números y espacios)
+        // Nombre de rescatista
         const nameInput = document.getElementById('player-name');
         const startButton = document.getElementById('btn-start-game');
         const nameHint = document.getElementById('name-hint');
+        const changeNameBtn = document.getElementById('btn-change-name');
+
         const validPlayerName = value => {
-            const clean = value.trim();
+            const clean = (value || '').trim();
             return /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]+( [A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]+)*$/.test(clean) && clean.length >= 3 && clean.length <= 12;
         };
 
@@ -1706,15 +1711,42 @@
                 startButton.click();
             }
         });
+
+        // Asegurar que al tocar se abra el teclado y se seleccione el texto
+        nameInput.addEventListener('click', () => {
+            nameInput.focus();
+            if (nameInput.value === 'RESCATISTA') {
+                try { nameInput.select(); } catch(err) {}
+            }
+        });
+        nameInput.addEventListener('touchend', (e) => {
+            nameInput.focus();
+        });
+
         nameInput.addEventListener('focus', () => {
             setTimeout(() => {
                 try { nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(err) {}
             }, 300);
         });
 
+        // Botón alternativo de diálogo nativo (100% infalible en cualquier navegador móvil)
+        if (changeNameBtn) {
+            changeNameBtn.onclick = function(e) {
+                e.preventDefault();
+                const custom = window.prompt('Ingresá tu nombre de rescatista (3 a 12 caracteres):', nameInput.value || 'RESCATISTA');
+                if (custom !== null && custom.trim().length >= 3) {
+                    nameInput.value = custom.trim().slice(0, 12);
+                    validateAndUpdateUI();
+                }
+            };
+        }
+
         startButton.onclick = function() {
-            const clean = nameInput.value.trim();
-            if (!validPlayerName(clean)) return;
+            let clean = nameInput.value.trim();
+            if (!validPlayerName(clean)) {
+                clean = 'RESCATISTA';
+                nameInput.value = clean;
+            }
             GameState.playerName = clean;
             unlockMobileAudio();
             try {
