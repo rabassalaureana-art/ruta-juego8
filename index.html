@@ -2,48 +2,133 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ruta de rescate</title>
     <script src="assets/phaser.min.js"></script>
     <script>if (typeof Phaser === 'undefined') { document.write('<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"><\/script>'); }</script>
     <script src="assets/art.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body {
+        html, body {
             margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background-color: #0d0d15; color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; overflow: hidden;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        h1 { margin: 5px 0 2px 0; font-size: 22px; text-align: center; color: #f39c12; }
-        p { margin: 0 0 10px 0; color: #bbb; font-size: 13px; text-align: center; }
-        
+        body {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; min-height: 100dvh;
+        }
+
+        #main-header {
+            width: 100%;
+            text-align: center;
+            padding: 4px 10px 2px 10px;
+            flex-shrink: 0;
+        }
+        h1 { margin: 2px 0 2px 0; font-size: 20px; text-align: center; color: #f39c12; }
+        .desktop-instructions { margin: 0 0 4px 0; color: #bbb; font-size: 12px; text-align: center; }
+
+        #main-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
         #game-wrapper {
             position: relative;
-            width: 800px;
-            height: 600px;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            max-height: calc(100dvh - 150px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 1;
         }
 
         #game-container {
             width: 100%;
             height: 100%;
-            border: 3px solid #222;
+            border: 2px solid #222;
             box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.8);
             border-radius: 6px;
             overflow: hidden;
+            background: #1a1a2e;
+            position: relative;
         }
 
+        #game-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+        }
+
+        /* --- PANTALLA INICIAL RESPONSIVE (CREDENCIAL) --- */
         #start-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100%; min-height: 100dvh;
             background: radial-gradient(circle at center, #151922 0%, #0a0c10 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999;
-            padding: 20px;
+            z-index: 99999;
+            padding: 14px;
             text-align: center;
             color: #ecf0f1;
             box-sizing: border-box;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .start-overlay-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 440px;
+            margin: auto 0;
+        }
+
+        .game-title-group {
+            margin-bottom: 16px;
+        }
+
+        .game-title-group h2 {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            color: #ffffff;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+        }
+
+        .game-title-group h3 {
+            font-size: 13px;
+            color: #3498db;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin: 5px 0 3px 0;
+            font-weight: 700;
+        }
+
+        .game-title-group p {
+            font-size: 12px;
+            color: #95a5a6;
+            margin: 0;
+            font-style: italic;
         }
 
         .credencial-card {
@@ -51,8 +136,8 @@
             border: 2px solid #2a3b53;
             border-top: 4px solid #e74c3c;
             border-radius: 12px;
-            width: min(460px, 94%);
-            padding: 24px 28px;
+            width: 100%;
+            padding: 20px 22px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(231, 76, 60, 0.2);
             text-align: left;
             position: relative;
@@ -64,24 +149,24 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 12px;
-            margin-bottom: 16px;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
         }
 
         .credencial-badge {
             background: #e74c3c;
             color: white;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             letter-spacing: 1.5px;
-            padding: 4px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
         }
 
         .credencial-serial {
             font-family: monospace;
             color: #3498db;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             letter-spacing: 1px;
         }
@@ -89,21 +174,21 @@
         .credencial-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 18px;
-            font-size: 13px;
+            gap: 10px;
+            margin-bottom: 14px;
+            font-size: 12px;
         }
 
         .credencial-field {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 8px 12px;
+            padding: 7px 10px;
             border-radius: 6px;
         }
 
         .credencial-label {
             color: #7f8c8d;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 2px;
@@ -112,18 +197,18 @@
         .credencial-val {
             color: #f1c40f;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .credencial-input-box {
-            margin-top: 10px;
-            margin-bottom: 18px;
+            margin-top: 8px;
+            margin-bottom: 14px;
         }
 
         .credencial-input-box label {
             display: block;
             color: #bdc3c7;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: uppercase;
@@ -137,13 +222,17 @@
             border-radius: 6px;
             background: #080b10;
             color: #ffffff;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: bold;
             letter-spacing: 1px;
             text-align: center;
             outline: none;
             box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: manipulation;
+            -webkit-appearance: none;
         }
 
         .name-input:focus {
@@ -154,7 +243,7 @@
         .name-hint {
             min-height: 18px;
             margin-top: 6px;
-            font-size: 12px;
+            font-size: 11px;
             color: #7f8c8d;
             text-align: center;
         }
@@ -164,8 +253,8 @@
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
             border: none;
-            padding: 14px;
-            font-size: 16px;
+            padding: 13px;
+            font-size: 15px;
             font-weight: 900;
             letter-spacing: 1.5px;
             text-transform: uppercase;
@@ -173,6 +262,7 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
             transition: all 0.2s ease;
+            touch-action: manipulation;
         }
 
         .confirm-btn-html:hover:not(:disabled) {
@@ -193,60 +283,276 @@
             opacity: 0.6;
         }
 
-        .game-title-group {
-            margin-bottom: 22px;
-        }
-
-        .game-title-group h2 {
-            font-size: 38px;
-            font-weight: 900;
-            letter-spacing: 3px;
-            color: #ffffff;
-            margin: 0;
-            text-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
-        }
-
-        .game-title-group h3 {
-            font-size: 14px;
-            color: #3498db;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin: 6px 0 4px 0;
-            font-weight: 700;
-        }
-
-        .game-title-group p {
-            font-size: 13px;
-            color: #95a5a6;
-            margin: 0;
-            font-style: italic;
-        }
-
-        .mobile-controls {
+        /* --- CONTROLES TÁCTILES MÓVILES (JOYSTICK REDONDO + BOTONES ACCION) --- */
+        #mobile-controls {
             display: none;
-            width: 800px; max-width: 100%;
-            justify-content: space-between; align-items: center;
-            padding: 10px 20px; margin-top: 5px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            z-index: 5000;
+        }
+
+        #mobile-controls.active {
+            display: flex;
+        }
+
+        .joystick-zone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             touch-action: none;
         }
-        .dpad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 5px; }
-        .touch-btn {
-            background: #2c3e50; border: 2px solid #555; color: white; font-weight: bold;
-            font-size: 18px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            user-select: none; -webkit-user-select: none;
+
+        /* Base redonda del Joystick */
+        .joystick-base {
+            position: relative;
+            width: 124px;
+            height: 124px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(25, 34, 48, 0.8) 0%, rgba(12, 17, 26, 0.92) 100%);
+            border: 3px solid rgba(52, 152, 219, 0.5);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), inset 0 0 14px rgba(52, 152, 219, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            cursor: pointer;
         }
-        .touch-btn:active { background: #e74c3c; }
-        .action-btn { width: 110px; height: 100px; background: #27ae60; border-radius: 12px; font-size: 16px; text-align: center; }
-        @media (max-width: 850px) { .mobile-controls { display: flex; } }
+
+        /* Guías decorativas de dirección */
+        .joystick-guide-x {
+            position: absolute;
+            width: 70%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
+        .joystick-guide-y {
+            position: absolute;
+            height: 70%;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.12);
+            pointer-events: none;
+        }
+        .joystick-ring-inner {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+        }
+
+        /* Bolillita táctil (Knob) */
+        .joystick-knob {
+            position: absolute;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%);
+            border: 2.5px solid #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+            touch-action: none;
+            pointer-events: none;
+            transition: transform 0.05s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .joystick-knob.dragging {
+            transition: none;
+        }
+
+        .knob-core {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Zona de botones táctiles a la derecha */
+        .actions-zone {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            touch-action: none;
+        }
+
+        /* Botones redondos táctiles */
+        .round-action-btn {
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            color: #ffffff;
+            font-weight: 900;
+            border: 2.5px solid rgba(255, 255, 255, 0.45);
+            transition: transform 0.1s ease, filter 0.1s ease;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+            outline: none;
+        }
+
+        .round-action-btn:active, .round-action-btn.touch-active {
+            transform: scale(0.91);
+            filter: brightness(1.25);
+        }
+
+        /* Botón Principal (AGARRAR / RESCATAR) */
+        .btn-action-main {
+            width: 76px;
+            height: 76px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.45), 0 0 10px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-action-main .btn-icon {
+            font-size: 20px;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .btn-action-main .btn-lbl {
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .btn-action-main .btn-sub {
+            font-size: 9px;
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* Botón Extra (AGARRAR / ACCION EXTRA) */
+        .btn-action-alt {
+            width: 62px;
+            height: 62px;
+            background: linear-gradient(135deg, #f39c12, #d35400);
+            box-shadow: 0 6px 18px rgba(230, 126, 34, 0.45), 0 0 10px rgba(230, 126, 34, 0.25);
+        }
+
+        .btn-action-alt .btn-icon {
+            font-size: 16px;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .btn-action-alt .btn-lbl {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .btn-action-alt .btn-sub {
+            font-size: 8px;
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* --- ADAPTACIONES RESPONSIVE (MÓVIL VERTICAL Y HORIZONTAL) --- */
+        @media (orientation: portrait) {
+            #main-header h1 { font-size: 17px; margin: 2px 0; }
+            .desktop-instructions { display: none; }
+            #game-wrapper {
+                width: 100vw;
+                max-width: 100vw;
+                aspect-ratio: 4 / 3;
+                height: auto;
+                max-height: 46dvh;
+            }
+            #mobile-controls {
+                flex: 1;
+                width: 100vw;
+                max-width: 100vw;
+                padding: 10px 20px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 600px) {
+            #main-header { display: none; }
+            #game-wrapper {
+                max-height: 100dvh;
+                height: 100dvh;
+                width: auto;
+                aspect-ratio: 4 / 3;
+                max-width: 100vw;
+            }
+            #mobile-controls {
+                position: fixed;
+                bottom: 10px;
+                left: 0;
+                right: 0;
+                width: 100vw;
+                max-width: 100vw;
+                padding: 0 25px;
+                pointer-events: none;
+            }
+            .joystick-zone, .actions-zone {
+                pointer-events: auto;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <h1>Ruta de rescate</h1>
-    <p>PC: [WASD/Flechas] Moverse | [E/Espacio] Recoger/Transferir | [ESC] Pausa | Móvil: Botones en pantalla</p>
+    <header id="main-header">
+        <h1>Ruta de rescate</h1>
+        <p class="desktop-instructions">PC: [WASD/Flechas] Moverse | [E/Espacio] Recoger/Transferir | [ESC] Pausa</p>
+    </header>
 
-    <div id="game-wrapper">
-        <div id="start-overlay">
+    <div id="main-stage">
+        <div id="game-wrapper">
+            <div id="game-container"></div>
+        </div>
+
+        <!-- CONTROLES TÁCTILES MÓVILES (JOYSTICK REDONDO + BOTONES ACCIÓN) -->
+        <div id="mobile-controls">
+            <div class="joystick-zone">
+                <div id="joystick-base" class="joystick-base" title="Joystick de Movimiento (Arrastrar o Tocar)">
+                    <div class="joystick-guide-x"></div>
+                    <div class="joystick-guide-y"></div>
+                    <div class="joystick-ring-inner"></div>
+                    <div id="joystick-knob" class="joystick-knob">
+                        <div class="knob-core"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="actions-zone">
+                <button id="btn-action-alt" class="round-action-btn btn-action-alt" type="button" aria-label="Acción Extra">
+                    <span class="btn-icon">🖐️</span>
+                    <span class="btn-lbl">AGARRAR</span>
+                    <span class="btn-sub">[ESPACIO]</span>
+                </button>
+                <button id="btn-action-main" class="round-action-btn btn-action-main" type="button" aria-label="Agarrar Sobreviviente">
+                    <span class="btn-icon">🤝</span>
+                    <span class="btn-lbl">AGARRAR</span>
+                    <span class="btn-sub">[ E ]</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA INICIAL RESPONSIVE (CREDENCIAL) -->
+    <div id="start-overlay">
+        <div class="start-overlay-inner">
             <div class="game-title-group">
                 <h2>RUTA DE ESCAPE</h2>
                 <h3>SIMULACIÓN DE EMERGENCIA Y SUPERVIVENCIA</h3>
@@ -275,23 +581,13 @@
 
                 <div class="credencial-input-box">
                     <label for="player-name">NOMBRE DEL RESCATISTA</label>
-                    <input class="name-input" id="player-name" type="text" maxlength="10" autocomplete="off" placeholder="Ingresá tu nombre" />
-                    <div class="name-hint" id="name-hint">Solo letras y números (3 a 10 caracteres).</div>
+                    <input class="name-input" id="player-name" type="text" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" placeholder="Ingresá tu nombre" enterkeyhint="done" />
+                    <div class="name-hint" id="name-hint">Solo letras y números (3 a 12 caracteres).</div>
                 </div>
 
-                <button class="confirm-btn-html" id="btn-start-game" disabled>CONFIRMAR IDENTIDAD</button>
+                <button class="confirm-btn-html" id="btn-start-game" type="button" disabled>CONFIRMAR IDENTIDAD</button>
             </div>
         </div>
-        <div id="game-container"></div>
-    </div>
-
-    <div class="mobile-controls">
-        <div class="dpad">
-            <div></div><div class="touch-btn" id="btn-up">▲</div><div></div>
-            <div class="touch-btn" id="btn-left">◄</div><div></div><div class="touch-btn" id="btn-right">►</div>
-            <div></div><div class="touch-btn" id="btn-down">▼</div><div></div>
-        </div>
-        <div class="touch-btn action-btn" id="btn-action">ACCION<br>[ E ]</div>
     </div>
 
     <script>
@@ -653,9 +949,14 @@
 
         const config = {
             type: Phaser.AUTO,
-            width: 800, height: 600,
             parent: 'game-container',
             backgroundColor: '#1a1a2e',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: 800,
+                height: 600
+            },
             physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
             scene: [BootScene, IntroMissionScene, CatastropheSelectScene, LevelSelectScene, GameScene, GameOverScene]
         };
@@ -672,7 +973,7 @@
             totalRunSeconds: 0,
             modeRunRescued: 0,
             lostThisMode: 0,
-            mobileInput: { up: false, down: false, left: false, right: false, action: false },
+            mobileInput: { up: false, down: false, left: false, right: false, action: false, vectorX: 0, vectorY: 0 },
             progress: JSON.parse(localStorage.getItem('ruta_rescate_progress')) || {
                 Terremoto: 1, Inundacion: 1, Erupcion: 1,
                 stars: {}
@@ -1367,24 +1668,59 @@
             return map;
         }
 
-        // Nombre obligatorio antes de comenzar (letras y números, 3 a 10 caracteres)
+        // Desbloqueo universal de audio para navegadores móviles (iOS y Android)
+        function unlockMobileAudio() {
+            try {
+                SFX.init();
+                if (SFX.ctx && SFX.ctx.state === 'suspended') {
+                    SFX.ctx.resume();
+                }
+            } catch(e) {}
+        }
+        window.addEventListener('touchstart', unlockMobileAudio, { passive: true });
+        window.addEventListener('pointerdown', unlockMobileAudio, { passive: true });
+        window.addEventListener('click', unlockMobileAudio, { passive: true });
+
+        // Nombre obligatorio antes de comenzar (3 a 12 caracteres, admite letras, números y espacios)
         const nameInput = document.getElementById('player-name');
         const startButton = document.getElementById('btn-start-game');
         const nameHint = document.getElementById('name-hint');
-        const validPlayerName = value => /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]{3,10}$/.test(value.trim());
-        nameInput.addEventListener('input', () => {
+        const validPlayerName = value => {
+            const clean = value.trim();
+            return /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]+( [A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]+)*$/.test(clean) && clean.length >= 3 && clean.length <= 12;
+        };
+
+        const validateAndUpdateUI = () => {
             const clean = nameInput.value.trim();
             const valid = validPlayerName(clean);
             startButton.disabled = !valid;
-            nameHint.textContent = valid ? `¡Identidad lista: Rescatista ${clean}!` : 'Solo letras y números (3 a 10 caracteres).';
+            nameHint.textContent = valid ? `¡Identidad lista: Rescatista ${clean}!` : 'Solo letras y números (3 a 12 caracteres).';
             nameHint.style.color = valid ? '#2ecc71' : '#f1c40f';
+        };
+
+        nameInput.addEventListener('input', validateAndUpdateUI);
+        nameInput.addEventListener('change', validateAndUpdateUI);
+        nameInput.addEventListener('keyup', (e) => {
+            validateAndUpdateUI();
+            if (e.key === 'Enter' && !startButton.disabled) {
+                startButton.click();
+            }
         });
+        nameInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                try { nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(err) {}
+            }, 300);
+        });
+
         startButton.onclick = function() {
             const clean = nameInput.value.trim();
             if (!validPlayerName(clean)) return;
             GameState.playerName = clean;
-            SFX.init();
-            SFX.playMenuMusic();
+            unlockMobileAudio();
+            try {
+                SFX.init();
+                SFX.playMenuMusic();
+            } catch(e) {}
             const overlay = document.getElementById('start-overlay');
             if (overlay) overlay.remove();
             if (game.scene.keys['BootScene']) {
@@ -1512,18 +1848,238 @@
             });
         };
 
+        // --- CONTROLADOR TÁCTIL: JOYSTICK REDONDO Y BOTONES ---
+        function triggerPlayerAction() {
+            GameState.mobileInput.action = true;
+            if (window.game && window.game.scene) {
+                const scene = window.game.scene.getScene('GameScene');
+                if (scene && scene.scene.isActive() && !scene.isPaused) {
+                    scene.tryAction();
+                    GameState.mobileInput.action = false;
+                }
+            }
+        }
+
+        class VirtualJoystick {
+            constructor(baseEl, knobEl) {
+                this.baseEl = baseEl;
+                this.knobEl = knobEl;
+                this.maxRadius = 36;
+                this.deadzone = 0.12;
+                this.activeTouchId = null;
+                this.centerX = 0;
+                this.centerY = 0;
+                this.isDown = false;
+                this.tapStartTime = 0;
+                this.hasMoved = false;
+
+                this.init();
+            }
+
+            init() {
+                if (!this.baseEl || !this.knobEl) return;
+
+                // Eventos táctiles móviles
+                this.baseEl.addEventListener('touchstart', (e) => this.handleStart(e), { passive: false });
+                window.addEventListener('touchmove', (e) => this.handleMove(e), { passive: false });
+                window.addEventListener('touchend', (e) => this.handleEnd(e), { passive: false });
+                window.addEventListener('touchcancel', (e) => this.handleEnd(e), { passive: false });
+
+                // Eventos de ratón para pruebas en PC
+                this.baseEl.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+            }
+
+            updateCenter() {
+                const rect = this.baseEl.getBoundingClientRect();
+                this.centerX = rect.left + rect.width / 2;
+                this.centerY = rect.top + rect.height / 2;
+            }
+
+            handleStart(e) {
+                if (this.isDown) return;
+                const touch = e.changedTouches[0];
+                if (!touch) return;
+                e.preventDefault();
+                this.activeTouchId = touch.identifier;
+                this.isDown = true;
+                this.tapStartTime = Date.now();
+                this.hasMoved = false;
+                this.knobEl.classList.add('dragging');
+                this.updateCenter();
+                this.processPosition(touch.clientX, touch.clientY);
+            }
+
+            handleMove(e) {
+                if (!this.isDown) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === this.activeTouchId) {
+                        e.preventDefault();
+                        this.processPosition(touch.clientX, touch.clientY);
+                        break;
+                    }
+                }
+            }
+
+            handleEnd(e) {
+                if (!this.isDown) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === this.activeTouchId) {
+                        e.preventDefault();
+                        const duration = Date.now() - this.tapStartTime;
+                        // Si apretás la bolillita directamente (un toque sin arrastrar), ejecuta la acción de agarrar
+                        if (!this.hasMoved && duration < 350) {
+                            triggerPlayerAction();
+                        }
+                        this.reset();
+                        break;
+                    }
+                }
+            }
+
+            handleMouseDown(e) {
+                if (this.isDown) return;
+                e.preventDefault();
+                this.isDown = true;
+                this.tapStartTime = Date.now();
+                this.hasMoved = false;
+                this.knobEl.classList.add('dragging');
+                this.updateCenter();
+                this.processPosition(e.clientX, e.clientY);
+            }
+
+            handleMouseMove(e) {
+                if (!this.isDown) return;
+                this.processPosition(e.clientX, e.clientY);
+            }
+
+            handleMouseUp(e) {
+                if (!this.isDown) return;
+                const duration = Date.now() - this.tapStartTime;
+                if (!this.hasMoved && duration < 350) {
+                    triggerPlayerAction();
+                }
+                this.reset();
+            }
+
+            processPosition(clientX, clientY) {
+                const dx = clientX - this.centerX;
+                const dy = clientY - this.centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 7) {
+                    this.hasMoved = true;
+                }
+
+                let clampedX = dx;
+                let clampedY = dy;
+                if (dist > this.maxRadius) {
+                    clampedX = (dx / dist) * this.maxRadius;
+                    clampedY = (dy / dist) * this.maxRadius;
+                }
+
+                this.knobEl.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+
+                let vx = clampedX / this.maxRadius;
+                let vy = clampedY / this.maxRadius;
+                const mag = Math.sqrt(vx * vx + vy * vy);
+
+                if (mag < this.deadzone) {
+                    vx = 0;
+                    vy = 0;
+                }
+
+                GameState.mobileInput.vectorX = vx;
+                GameState.mobileInput.vectorY = vy;
+                GameState.mobileInput.left = vx < -0.28;
+                GameState.mobileInput.right = vx > 0.28;
+                GameState.mobileInput.up = vy < -0.28;
+                GameState.mobileInput.down = vy > 0.28;
+            }
+
+            reset() {
+                this.isDown = false;
+                this.activeTouchId = null;
+                this.hasMoved = false;
+                this.knobEl.classList.remove('dragging');
+                this.knobEl.style.transform = 'translate(0px, 0px)';
+                GameState.mobileInput.vectorX = 0;
+                GameState.mobileInput.vectorY = 0;
+                GameState.mobileInput.left = false;
+                GameState.mobileInput.right = false;
+                GameState.mobileInput.up = false;
+                GameState.mobileInput.down = false;
+            }
+        }
+
+        window.setMobileControlsVisible = function (show) {
+            const el = document.getElementById('mobile-controls');
+            if (!el) return;
+            const isTouchOrSmall = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 850);
+            if (show && isTouchOrSmall) {
+                el.classList.add('active');
+                if (window.virtualJoystickInstance) {
+                    setTimeout(() => window.virtualJoystickInstance.updateCenter(), 50);
+                }
+            } else {
+                el.classList.remove('active');
+                if (window.virtualJoystickInstance) {
+                    window.virtualJoystickInstance.reset();
+                }
+            }
+        };
+
         BootScene.prototype.setupTouchListeners = function () {
-            const bindTouch = (id, key) => {
+            const baseEl = document.getElementById('joystick-base');
+            const knobEl = document.getElementById('joystick-knob');
+            if (baseEl && knobEl && !window.virtualJoystickInstance) {
+                window.virtualJoystickInstance = new VirtualJoystick(baseEl, knobEl);
+            }
+
+            const bindBtn = (id) => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                el.addEventListener('touchstart', (e) => { e.preventDefault(); GameState.mobileInput[key] = true; });
-                el.addEventListener('touchend', (e) => { e.preventDefault(); GameState.mobileInput[key] = false; });
-                el.addEventListener('mousedown', () => { GameState.mobileInput[key] = true; });
-                el.addEventListener('mouseup', () => { GameState.mobileInput[key] = false; });
+                const onPress = (e) => {
+                    e.preventDefault();
+                    el.classList.add('touch-active');
+                    triggerPlayerAction();
+                };
+                const onRelease = (e) => {
+                    e.preventDefault();
+                    el.classList.remove('touch-active');
+                };
+                el.addEventListener('touchstart', onPress, { passive: false });
+                el.addEventListener('touchend', onRelease, { passive: false });
+                el.addEventListener('touchcancel', onRelease, { passive: false });
+                el.addEventListener('mousedown', onPress);
+                el.addEventListener('mouseup', onRelease);
+                el.addEventListener('mouseleave', onRelease);
             };
-            bindTouch('btn-up', 'up'); bindTouch('btn-down', 'down');
-            bindTouch('btn-left', 'left'); bindTouch('btn-right', 'right');
-            bindTouch('btn-action', 'action');
+
+            bindBtn('btn-action-main');
+            bindBtn('btn-action-alt');
+
+            window.addEventListener('resize', () => {
+                if (window.game && window.game.scale) {
+                    window.game.scale.refresh();
+                }
+                if (window.virtualJoystickInstance) {
+                    window.virtualJoystickInstance.updateCenter();
+                }
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (window.game && window.game.scale) {
+                        window.game.scale.refresh();
+                    }
+                    if (window.virtualJoystickInstance) {
+                        window.virtualJoystickInstance.updateCenter();
+                    }
+                }, 200);
+            });
         };
 
         BootScene.prototype.create = function () {
@@ -2326,6 +2882,13 @@
 
             this.updateHUD();
             this.createPauseOverlay();
+
+            if (window.setMobileControlsVisible) {
+                window.setMobileControlsVisible(true);
+            }
+            this.events.on('shutdown', () => { if (window.setMobileControlsVisible) window.setMobileControlsVisible(false); });
+            this.events.on('pause', () => { if (window.setMobileControlsVisible) window.setMobileControlsVisible(false); });
+            this.events.on('resume', () => { if (window.setMobileControlsVisible) window.setMobileControlsVisible(true); });
         };
 
         GameScene.prototype.scheduleAmbulance = function () {
@@ -2473,12 +3036,22 @@
             let moveX = 0, moveY = 0;
             const mob = GameState.mobileInput;
 
-            if (this.cursors.left.isDown || this.wasd.left.isDown || mob.left) moveX = -1;
-            if (this.cursors.right.isDown || this.wasd.right.isDown || mob.right) moveX = 1;
-            if (this.cursors.up.isDown || this.wasd.up.isDown || mob.up) moveY = -1;
-            if (this.cursors.down.isDown || this.wasd.down.isDown || mob.down) moveY = 1;
+            if (mob.vectorX !== undefined && (Math.abs(mob.vectorX) > 0.05 || Math.abs(mob.vectorY) > 0.05)) {
+                moveX = mob.vectorX;
+                moveY = mob.vectorY;
+                const mag = Math.sqrt(moveX * moveX + moveY * moveY);
+                if (mag > 1) {
+                    moveX /= mag;
+                    moveY /= mag;
+                }
+            } else {
+                if (this.cursors.left.isDown || this.wasd.left.isDown || mob.left) moveX = -1;
+                if (this.cursors.right.isDown || this.wasd.right.isDown || mob.right) moveX = 1;
+                if (this.cursors.up.isDown || this.wasd.up.isDown || mob.up) moveY = -1;
+                if (this.cursors.down.isDown || this.wasd.down.isDown || mob.down) moveY = 1;
 
-            if (moveX !== 0 && moveY !== 0) { moveX *= 0.7071; moveY *= 0.7071; }
+                if (moveX !== 0 && moveY !== 0) { moveX *= 0.7071; moveY *= 0.7071; }
+            }
 
             this.player.setVelocity(moveX * currentSpeed, moveY * currentSpeed);
 
@@ -2981,6 +3554,10 @@
             if (this.gameOverStarted) return;
             this.gameOverStarted = true;
             this.levelFinished = true;
+
+            if (window.setMobileControlsVisible) {
+                window.setMobileControlsVisible(false);
+            }
 
             // Detener timers de forma segura
             if (this.debrisTimer) { try { this.debrisTimer.remove(); } catch(e) {} }
